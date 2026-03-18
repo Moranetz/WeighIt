@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh auth:*)",
+      "Bash(git --version)",
+      "Bash(git -C /Users/home/Downloads/WeighIt config user.email)",
+      "Bash(git -C /Users/home/Downloads/WeighIt config user.name)",
+      "Bash(git config:*)",
+      "Read(//Users/home/**)",
+      "Bash(security find-internet-password:*)",
+      "Bash(curl -s -X POST https://api.github.com/user/repos -H \"Authorization: token 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\" -H \"Content-Type: application/json\" -d '{\"\"\"\"name\"\"\"\":\"\"\"\"WeighIt\"\"\"\",\"\"\"\"private\"\"\"\":true,\"\"\"\"description\"\"\"\":\"\"\"\"A native iOS 17 thinking tool based on Analysis of Competing Hypotheses\"\"\"\"}')",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git branch:*)",
+      "Bash(git remote:*)"
+    ]
+  }
+}
