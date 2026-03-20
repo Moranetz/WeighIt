@@ -150,8 +150,8 @@ struct MatrixCellView: View {
         ZStack {
             // Background
             if let r = rating, !isDimmed {
-                r.bgColor
-                    .shadow(.inner(color: r.color.opacity(0.15), radius: 10))
+                Rectangle()
+                    .fill(r.bgColor.shadow(.inner(color: r.color.opacity(0.15), radius: 10)))
             } else {
                 Color.white.opacity(isDimmed ? 0.01 : 0.015)
             }
