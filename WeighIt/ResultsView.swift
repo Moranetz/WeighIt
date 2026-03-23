@@ -101,7 +101,8 @@ struct ResultsView: View {
 
             // Tip
             HStack(alignment: .top, spacing: 8) {
-                Text("💡")
+                Image(systemName: "lightbulb.fill")
+                    .foregroundStyle(Theme.accent)
                 Text("The best explanation isn't the one with the most support — it's the one with the fewest contradictions.")
                     .font(.caption)
                     .foregroundStyle(Theme.textDim)

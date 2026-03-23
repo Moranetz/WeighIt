@@ -35,7 +35,8 @@ struct HypothesisRow: View {
                     hypothesis.isRuledOut.toggle()
                 }
             } label: {
-                Text(hypothesis.isRuledOut ? "↩ undo" : "✕ rule out")
+                Label(hypothesis.isRuledOut ? "undo" : "rule out",
+                      systemImage: hypothesis.isRuledOut ? "arrow.uturn.backward" : "xmark")
                     .font(.system(size: 11, weight: .bold))
                     .foregroundStyle(hypothesis.isRuledOut ? Theme.positive : Theme.negative)
                     .padding(.horizontal, 10)
@@ -181,7 +182,8 @@ struct NotePanel: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 HStack(spacing: 4) {
-                    Text("📝")
+                    Image(systemName: "note.text")
+                        .foregroundStyle(Theme.accent)
                     Text(evidence.text.isEmpty ? "Evidence" : evidence.text)
                         .fontWeight(.semibold)
                         .foregroundStyle(Theme.textSecondary)

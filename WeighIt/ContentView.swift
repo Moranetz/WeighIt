@@ -32,8 +32,9 @@ struct ContentView: View {
                         showBoardList = true
                     } label: {
                         HStack(spacing: 8) {
-                            Text("🧠")
+                            Image(systemName: "brain.head.profile")
                                 .font(.title2)
+                                .foregroundStyle(Theme.accent)
                             VStack(alignment: .leading, spacing: 1) {
                                 Text("Weigh It")
                                     .font(.headline)

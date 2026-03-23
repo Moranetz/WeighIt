@@ -161,8 +161,9 @@ struct MatrixCellView: View {
                 Color.clear
             } else if let r = rating {
                 VStack(spacing: 3) {
-                    Text(r.emoji)
+                    Image(systemName: r.iconName)
                         .font(.title3)
+                        .foregroundStyle(r.color)
                         .scaleEffect(justSet ? 1.2 : 1)
                         .animation(.spring(response: 0.3, dampingFraction: 0.5), value: justSet)
                     Text(r.shortLabel)
@@ -180,8 +181,9 @@ struct MatrixCellView: View {
                 VStack {
                     HStack {
                         Spacer()
-                        Text("📝")
+                        Image(systemName: "note.text")
                             .font(.system(size: 8))
+                            .foregroundStyle(Theme.textDim)
                             .padding(3)
                     }
                     Spacer()
@@ -218,8 +220,9 @@ struct RatingPickerView: View {
                     onPick(r)
                 } label: {
                     HStack(spacing: 10) {
-                        Text(r.emoji)
+                        Image(systemName: r.iconName)
                             .font(.title3)
+                            .foregroundStyle(r.color)
                             .frame(width: 28)
                         Text(r.label)
                             .font(.subheadline)
@@ -270,7 +273,8 @@ struct RatingPickerView: View {
                 onNote()
             } label: {
                 HStack(spacing: 10) {
-                    Text("📝")
+                    Image(systemName: "note.text")
+                        .foregroundStyle(Theme.textSecondary)
                         .frame(width: 28)
                     Text("Add note")
                         .font(.subheadline)

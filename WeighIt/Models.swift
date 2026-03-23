@@ -13,13 +13,13 @@ enum Rating: String, Codable, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    var emoji: String {
+    var iconName: String {
         switch self {
-        case .stronglySupports: "💚"
-        case .supports: "👍"
-        case .irrelevant: "🤷"
-        case .contradicts: "👎"
-        case .stronglyContradicts: "🚫"
+        case .stronglySupports: "heart.circle.fill"
+        case .supports: "hand.thumbsup.fill"
+        case .irrelevant: "minus.circle"
+        case .contradicts: "hand.thumbsdown.fill"
+        case .stronglyContradicts: "xmark.octagon.fill"
         }
     }
 

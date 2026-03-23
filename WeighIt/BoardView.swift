@@ -57,6 +57,9 @@ struct BoardView: View {
             }
         }
         .onChange(of: board.filledCells) { oldVal, newVal in
+            if newVal > 0 && !ReviewManager.shared.hasCompletedFirstAnalysis {
+                ReviewManager.shared.checkAndPromptReview()
+            }
             if board.completionPercent == 100 && previousFilledCount < board.totalCells && board.totalCells > 0 {
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
                     showConfetti = true
@@ -199,7 +202,7 @@ struct BoardView: View {
                 HStack(spacing: 6) {
                     ForEach(Rating.allCases) { r in
                         HStack(spacing: 4) {
-                            Text(r.emoji).font(.caption)
+                            Image(systemName: r.iconName).font(.caption).foregroundStyle(r.color)
                             Text(r.shortLabel)
                                 .font(.system(size: 10, weight: .semibold))
                                 .foregroundStyle(r.color)
