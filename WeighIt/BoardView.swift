@@ -57,9 +57,6 @@ struct BoardView: View {
             }
         }
         .onChange(of: board.filledCells) { oldVal, newVal in
-            if newVal > 0 && !ReviewManager.shared.hasCompletedFirstAnalysis {
-                ReviewManager.shared.checkAndPromptReview()
-            }
             if board.completionPercent == 100 && previousFilledCount < board.totalCells && board.totalCells > 0 {
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
                     showConfetti = true
