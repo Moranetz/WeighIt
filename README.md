@@ -1,28 +1,27 @@
-# Weigh It — SwiftUI + SwiftData
+# Weigh It
 
-A native iOS 17 thinking tool based on the CIA's Analysis of Competing Hypotheses technique.
+Native iOS 17 decision-analysis app built with SwiftUI and SwiftData.
 
-## Xcode Setup
+`WeighIt` translates the CIA's Analysis of Competing Hypotheses method into a tactile mobile tool. Instead of keeping a messy grid in notes or a spreadsheet, the user builds a live board of hypotheses, evidence, ratings, exclusions, and notes inside a purpose-built interface that computes signal strength as the board fills in.
 
-1. **Create a new Xcode project:**
-   - File → New → Project
-   - Choose **App** (iOS)
-   - Product Name: `WeighIt`
-   - Interface: **SwiftUI**
-   - Language: **Swift**
-   - Storage: **SwiftData** ← important
-   - Uncheck "Include Tests" unless you want them
+## Why This Repo Matters
 
-2. **Replace the generated files:**
-   - Delete the auto-generated `ContentView.swift`, `Item.swift`, and `WeighItApp.swift`
-   - Drag all 9 `.swift` files from the `WeighIt/` folder into your Xcode project
-   - Make sure "Copy items if needed" is checked
+The value here is not just CRUD around a list of ideas. The interesting layer is the decision model:
 
-3. **Set deployment target:**
-   - Select your project in the navigator
-   - Under General → Minimum Deployments → **iOS 17.0**
+- hypotheses and evidence are first-class domain objects, not loose text blobs
+- per-cell ratings preserve nuance instead of collapsing everything to yes/no
+- exclusion and diagnostic evidence logic help the user see what actually changes the ranking
+- completion state, confetti, export, and bias warnings turn an analytical method into an app people will actually use
 
-4. **Build & Run** (⌘R)
+This repo is a good example of taking a dense cognitive framework and mechanizing it into an iOS-native workflow.
+
+## Running Locally
+
+1. Open [WeighIt.xcodeproj](/Users/infiniteupside/WeighIt/WeighIt.xcodeproj) in Xcode 15 or later.
+2. Select an iPhone simulator running iOS 17.0 or later.
+3. Build and run.
+
+The project already contains the app target and SwiftData configuration. No manual project scaffolding is required.
 
 ## File Structure
 
@@ -38,7 +37,7 @@ A native iOS 17 thinking tool based on the CIA's Analysis of Competing Hypothese
 | `ResultsView.swift` | Ranked results, diagnostic evidence, bias warnings, animated scores |
 | `ConfettiView.swift` | Celebration animation on 100% matrix completion |
 
-## Features
+## Product Surface
 
 - **SwiftData persistence** — boards save automatically, survive app restarts
 - **Multiple boards** — create, switch, delete boards from the header menu
@@ -53,6 +52,14 @@ A native iOS 17 thinking tool based on the CIA's Analysis of Competing Hypothese
 - **Export** — share as markdown via share sheet
 - **Dark mode** — warm espresso palette, glass cards, glow accents
 - **iOS 17 native** — @Observable, SwiftData, .contentTransition, sensory feedback
+
+## What To Look At First
+
+- [ContentView.swift](/Users/infiniteupside/WeighIt/WeighIt/ContentView.swift)
+- [BoardView.swift](/Users/infiniteupside/WeighIt/WeighIt/BoardView.swift)
+- [MatrixView.swift](/Users/infiniteupside/WeighIt/WeighIt/MatrixView.swift)
+- [ResultsView.swift](/Users/infiniteupside/WeighIt/WeighIt/ResultsView.swift)
+- [Models.swift](/Users/infiniteupside/WeighIt/WeighIt/Models.swift)
 
 ## Requirements
 
