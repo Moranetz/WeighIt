@@ -1,5 +1,8 @@
 # Weigh It
 
+[![iOS CI](https://github.com/melmarion/WeighIt/actions/workflows/ios-ci.yml/badge.svg)](https://github.com/melmarion/WeighIt/actions/workflows/ios-ci.yml)
+[![Status](https://img.shields.io/badge/status-native%20ios%20app-0f172a)](https://github.com/melmarion/WeighIt)
+
 Native iOS 17 decision-analysis app built with SwiftUI and SwiftData.
 
 `WeighIt` translates the CIA's Analysis of Competing Hypotheses method into a tactile mobile tool. Instead of keeping a messy grid in notes or a spreadsheet, the user builds a live board of hypotheses, evidence, ratings, exclusions, and notes inside a purpose-built interface that computes signal strength as the board fills in.
@@ -22,6 +25,12 @@ This repo is a good example of taking a dense cognitive framework and mechanizin
 3. Build and run.
 
 The project already contains the app target and SwiftData configuration. No manual project scaffolding is required.
+
+## Proof Signals
+
+- native Xcode project checked in at [WeighIt.xcodeproj](/Users/infiniteupside/WeighIt/WeighIt.xcodeproj)
+- GitHub Actions build workflow at [.github/workflows/ios-ci.yml](/Users/infiniteupside/WeighIt/.github/workflows/ios-ci.yml)
+- source, prototype, and docs layers are all visible in one repo
 
 ## File Structure
 
