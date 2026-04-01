@@ -3,8 +3,6 @@ import SwiftData
 
 struct BoardView: View {
     @Bindable var board: Board
-    @Environment(\.modelContext) private var context
-    @Environment(\.undoManager) private var undoManager
     @State private var showResults = false
     @State private var selectedCell: CellKey?
     @State private var ratingPopoverCell: CellKey?
@@ -13,6 +11,7 @@ struct BoardView: View {
 
     private let haptic = UIImpactFeedbackGenerator(style: .light)
     private let successHaptic = UINotificationFeedbackGenerator()
+    private let confettiDisplayDuration: Duration = .seconds(2.5)
 
     var body: some View {
         ScrollView {
@@ -62,8 +61,11 @@ struct BoardView: View {
                     showConfetti = true
                 }
                 successHaptic.notificationOccurred(.success)
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
-                    showConfetti = false
+                Task {
+                    try? await Task.sleep(for: confettiDisplayDuration)
+                    await MainActor.run {
+                        showConfetti = false
+                    }
                 }
             }
             previousFilledCount = newVal

@@ -8,6 +8,14 @@ struct MatrixGridView: View {
     @Binding var ratingPopoverCell: CellKey?
     let onRate: (UUID, UUID, Rating?) -> Void
 
+    private func hypothesisTitle(for hypothesis: Hypothesis) -> String {
+        guard !hypothesis.name.isEmpty else {
+            let index = board.sortedHypotheses.firstIndex(where: { $0.id == hypothesis.id }) ?? 0
+            return "Expl. \(index + 1)"
+        }
+        return hypothesis.name
+    }
+
     var body: some View {
         ScrollView(.horizontal, showsIndicators: true) {
             VStack(spacing: 0) {
@@ -34,7 +42,7 @@ struct MatrixGridView: View {
                                 .fill(hyp.color)
                                 .frame(width: 10, height: 10)
                                 .shadow(color: hyp.color.opacity(0.5), radius: 4)
-                            Text(hyp.name.isEmpty ? "Expl. \(board.sortedHypotheses.firstIndex(where: { $0.id == hyp.id })! + 1)" : hyp.name)
+                            Text(hypothesisTitle(for: hyp))
                                 .font(.system(size: 11, weight: .semibold))
                                 .foregroundStyle(Theme.textSecondary)
                                 .lineLimit(2)
@@ -145,6 +153,7 @@ struct MatrixCellView: View {
     let isDimmed: Bool
     let isSelected: Bool
     @State private var justSet = false
+    private let ratingPulseDuration: Duration = .milliseconds(400)
 
     var body: some View {
         ZStack {
@@ -199,7 +208,12 @@ struct MatrixCellView: View {
         }
         .onChange(of: rating) { _, _ in
             justSet = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { justSet = false }
+            Task {
+                try? await Task.sleep(for: ratingPulseDuration)
+                await MainActor.run {
+                    justSet = false
+                }
+            }
         }
     }
 }
