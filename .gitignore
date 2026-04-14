@@ -25,6 +25,9 @@ Pods/
 # macOS
 .DS_Store
 
+# Local agent settings
+.claude/
+
 # Android / Gradle
 .gradle/
 local.properties
