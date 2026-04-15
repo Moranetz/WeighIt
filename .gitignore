@@ -34,3 +34,8 @@ local.properties
 android-app/.gradle/
 android-app/build/
 android-app/app/build/
+
+# Release byproducts
+*.mobileprovision
+*.dSYM.zip
+report.xml
