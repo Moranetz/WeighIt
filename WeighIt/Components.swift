@@ -170,9 +170,9 @@ struct WeightPicker: View {
                     withAnimation(.spring(response: 0.2)) { value = w }
                 } label: {
                     Text(displayLabel(for: w))
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.system(size: 9.5, weight: .bold))
                         .foregroundStyle(value == w ? Theme.accent : Theme.textDim)
-                        .frame(width: 36, height: 20)
+                        .frame(width: 44, height: 20)
                         .background(
                             value == w ? Theme.accent.opacity(0.15) : Color.clear,
                             in: RoundedRectangle(cornerRadius: 5)

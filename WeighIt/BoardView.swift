@@ -74,19 +74,18 @@ struct BoardView: View {
 
     // MARK: - Question
 
+    @FocusState private var questionFocused: Bool
+    @FocusState private var conclusionFocused: Bool
+
     private var questionSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            SectionLabel(text: "The question")
+        VStack(alignment: .leading, spacing: 12) {
+            SectionLabel(text: "The question", icon: "questionmark.circle")
             TextField("e.g. Why are signups dropping?", text: $board.question, axis: .vertical)
-                .font(.body)
-                .fontWeight(.medium)
+                .font(.system(.title3, design: .rounded))
+                .fontWeight(.semibold)
                 .foregroundStyle(Theme.textPrimary)
-                .padding(14)
-                .background(Theme.raised, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .strokeBorder(Theme.border, lineWidth: 1)
-                )
+                .focused($questionFocused)
+                .celestialField(isFocused: questionFocused)
         }
         .cardStyle()
     }
@@ -96,9 +95,9 @@ struct BoardView: View {
     private var hypothesesSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    SectionLabel(text: "Stars to test")
-                    Text("Each candidate explanation. Reckon ranks them by what hasn't been knocked down — not by what has the most support.")
+                VStack(alignment: .leading, spacing: 4) {
+                    SectionLabel(text: "Stars to test", icon: "star")
+                    Text("Each candidate explanation. Ranked by what hasn't been knocked down.")
                         .font(.caption)
                         .foregroundStyle(Theme.textDim)
                         .fixedSize(horizontal: false, vertical: true)
@@ -141,9 +140,9 @@ struct BoardView: View {
     private var evidenceSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    SectionLabel(text: "Observation log")
-                    Text("Each piece of evidence is one observation. Credibility × relevance is your viewing condition.")
+                VStack(alignment: .leading, spacing: 4) {
+                    SectionLabel(text: "Observation log", icon: "binoculars")
+                    Text("Each piece of evidence is one observation. Sky × view is your condition.")
                         .font(.caption)
                         .foregroundStyle(Theme.textDim)
                         .fixedSize(horizontal: false, vertical: true)
@@ -189,9 +188,9 @@ struct BoardView: View {
     private var matrixSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    SectionLabel(text: "The star chart")
-                    Text("Each cell is one sightline: this observation against this star. Empty sightlines pulse to remind you they're unobserved.")
+                VStack(alignment: .leading, spacing: 4) {
+                    SectionLabel(text: "The star chart", icon: "scope")
+                    Text("Each cell is one sightline. Empty cells pulse — unobserved.")
                         .font(.caption)
                         .foregroundStyle(Theme.textDim)
                         .fixedSize(horizontal: false, vertical: true)
@@ -291,30 +290,20 @@ struct BoardView: View {
     // MARK: - Conclusion
 
     private var conclusionSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("So, what do you think?")
-                .font(.body)
-                .fontWeight(.bold)
-                .foregroundStyle(Theme.accent)
-            Text("Write your conclusion. Included in exports.")
+        VStack(alignment: .leading, spacing: 10) {
+            SectionLabel(text: "Your verdict", icon: "checkmark.seal")
+            Text("Based on the constellation, what do you think?")
                 .font(.caption)
                 .foregroundStyle(Theme.textDim)
+                .italic()
             TextField("Based on the evidence, I believe…", text: $board.conclusion, axis: .vertical)
-                .font(.body)
+                .font(.system(.body, design: .rounded))
                 .lineLimit(3...8)
                 .foregroundStyle(Theme.textPrimary)
-                .padding(14)
-                .background(Theme.raised, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .strokeBorder(Theme.accent.opacity(0.15), lineWidth: 1)
-                )
+                .focused($conclusionFocused)
+                .celestialField(isFocused: conclusionFocused)
         }
         .cardStyle()
-        .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .strokeBorder(Theme.accent.opacity(0.1), lineWidth: 1)
-        )
     }
 
     // MARK: - Footer
