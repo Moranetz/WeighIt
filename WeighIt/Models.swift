@@ -26,23 +26,28 @@ enum Rating: String, Codable, CaseIterable, Identifiable {
         }
     }
 
+    /// Analyst vocabulary — verbs an actual decision-maker would use, not horoscope
+    /// language. "Confirms / Bears out / Inconclusive / Cuts against / Falsifies"
+    /// echo the way Popper, Heuer, and forensic / intelligence analysts write about
+    /// evidence-vs-hypothesis fit. "Falsifies" especially: the strongest possible
+    /// claim that an observation has refuted a hypothesis (Popper's term).
     var label: String {
         switch self {
         case .stronglySupports:    "Confirms"
-        case .supports:            "Aligns"
-        case .irrelevant:          "Silent"
-        case .contradicts:         "Dims"
-        case .stronglyContradicts: "Refutes"
+        case .supports:            "Bears out"
+        case .irrelevant:          "Inconclusive"
+        case .contradicts:         "Cuts against"
+        case .stronglyContradicts: "Falsifies"
         }
     }
 
     var shortLabel: String {
         switch self {
         case .stronglySupports:    "confirms"
-        case .supports:            "aligns"
-        case .irrelevant:          "silent"
-        case .contradicts:         "dims"
-        case .stronglyContradicts: "refutes"
+        case .supports:            "bears out"
+        case .irrelevant:          "inconclusive"
+        case .contradicts:         "cuts against"
+        case .stronglyContradicts: "falsifies"
         }
     }
 
