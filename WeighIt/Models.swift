@@ -13,33 +13,36 @@ enum Rating: String, Codable, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    /// Celestial icon vocabulary. Each rating is "what this observation does to the
+    /// star": brightens it, leaves it alone, or dims it. Replaces the old generic
+    /// hearts/thumbs-up — those were a brand mismatch in a star-map app.
     var iconName: String {
         switch self {
-        case .stronglySupports: "heart.circle.fill"
-        case .supports: "hand.thumbsup.fill"
-        case .irrelevant: "minus.circle"
-        case .contradicts: "hand.thumbsdown.fill"
-        case .stronglyContradicts: "xmark.octagon.fill"
+        case .stronglySupports:    "sparkles"           // bright burst — confirms the star
+        case .supports:            "star.fill"          // confirmed star
+        case .irrelevant:          "circle.dotted"      // silent — neither dims nor brightens
+        case .contradicts:         "moon"               // partial dimming
+        case .stronglyContradicts: "moon.stars.fill"    // eclipsed — visible refutation
         }
     }
 
     var label: String {
         switch self {
-        case .stronglySupports: "Strong yes"
-        case .supports: "Supports"
-        case .irrelevant: "Irrelevant"
-        case .contradicts: "Contradicts"
-        case .stronglyContradicts: "Strong no"
+        case .stronglySupports:    "Confirms"
+        case .supports:            "Aligns"
+        case .irrelevant:          "Silent"
+        case .contradicts:         "Dims"
+        case .stronglyContradicts: "Refutes"
         }
     }
 
     var shortLabel: String {
         switch self {
-        case .stronglySupports: "strongly supports"
-        case .supports: "supports"
-        case .irrelevant: "irrelevant"
-        case .contradicts: "contradicts"
-        case .stronglyContradicts: "strongly contradicts"
+        case .stronglySupports:    "confirms"
+        case .supports:            "aligns"
+        case .irrelevant:          "silent"
+        case .contradicts:         "dims"
+        case .stronglyContradicts: "refutes"
         }
     }
 

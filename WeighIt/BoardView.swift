@@ -111,12 +111,11 @@ struct BoardView: View {
                             colorHex: HypothesisColors.all[board.hypotheses.count % HypothesisColors.all.count],
                             sortOrder: board.hypotheses.count
                         )
-                        board.hypotheses.append(h)
+                        withAnimation(.spring(response: 0.5, dampingFraction: 0.75)) {
+                            board.hypotheses.append(h)
+                        }
                     } label: {
-                        Text("+ add")
-                            .font(.subheadline)
-                            .fontWeight(.bold)
-                            .foregroundStyle(Theme.accent)
+                        addPillLabel("Add a star", systemImage: "plus")
                     }
                 }
             }
@@ -151,12 +150,11 @@ struct BoardView: View {
                 Button {
                     haptic.impactOccurred()
                     let ev = Evidence(sortOrder: board.evidences.count)
-                    board.evidences.append(ev)
+                    withAnimation(.spring(response: 0.5, dampingFraction: 0.75)) {
+                        board.evidences.append(ev)
+                    }
                 } label: {
-                    Text("+ add")
-                        .font(.subheadline)
-                        .fontWeight(.bold)
-                        .foregroundStyle(Theme.accent)
+                    addPillLabel("Log observation", systemImage: "binoculars")
                 }
             }
 
@@ -316,6 +314,23 @@ struct BoardView: View {
     }
 
     // MARK: - Footer
+
+    /// Small accent-tinted capsule action. Replaces tiny gray "+ add" labels.
+    /// Reads like "log an observation" or "add a new star" — verbs that fit the
+    /// observatory metaphor.
+    private func addPillLabel(_ text: String, systemImage: String) -> some View {
+        HStack(spacing: 5) {
+            Image(systemName: systemImage)
+                .font(.system(size: 10, weight: .bold))
+            Text(text)
+                .font(.system(size: 12, weight: .heavy, design: .rounded))
+        }
+        .foregroundStyle(Theme.accent)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
+        .background(Theme.accent.opacity(0.10), in: Capsule())
+        .overlay(Capsule().strokeBorder(Theme.accent.opacity(0.3), lineWidth: 1))
+    }
 
     private var footerView: some View {
         VStack(spacing: 6) {
