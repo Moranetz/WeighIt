@@ -50,7 +50,7 @@ struct BoardView: View {
         .scrollDismissesKeyboard(.interactively)
         .overlay {
             if showConfetti {
-                ConfettiView()
+                ConstellationRevealView(board: board)
                     .ignoresSafeArea()
                     .allowsHitTesting(false)
             }
@@ -344,5 +344,119 @@ struct BoardView: View {
         sorted.swapAt(idx, newIdx)
         for (i, e) in sorted.enumerated() { e.sortOrder = i }
         haptic.impactOccurred()
+    }
+}
+
+// MARK: - Constellation Reveal
+// Replaces the celebratory confetti with a deliberative "verdict settled" moment.
+// When the matrix hits 100%, the leading hypothesis (the steadiest star, fewest
+// refutations) emerges with a soft glow + lines drawn outward to its supporting
+// observations. No particles, no explosion — just quiet pattern recognition.
+
+struct ConstellationRevealView: View {
+    let board: Board
+    @State private var animateIn = false
+
+    /// The leading hypothesis = the steadiest star = the result of refutation-first
+    /// ranking. Whatever ACH rules say is the right answer is what we celebrate here.
+    private var leadingHypothesis: Hypothesis? {
+        board.rankedHypotheses.first?.hypothesis
+    }
+
+    /// Names of supporting observations for the leading star — drawn as connection
+    /// labels around the star. These are the cells that confirmed the constellation.
+    private var supportingObservations: [String] {
+        guard let lead = leadingHypothesis else { return [] }
+        return board.evidences.compactMap { ev in
+            let r = board.rating(evidenceID: ev.id, hypothesisID: lead.id)
+            guard r == .supports || r == .stronglySupports else { return nil }
+            return ev.text.isEmpty ? nil : String(ev.text.prefix(40))
+        }
+    }
+
+    var body: some View {
+        ZStack {
+            // Dim the background for focus
+            Color.black.opacity(0.55)
+                .ignoresSafeArea()
+
+            VStack(spacing: 24) {
+                Spacer()
+
+                // The leading star — pulses softly as the verdict moment lands
+                if let lead = leadingHypothesis {
+                    ZStack {
+                        Circle()
+                            .fill(lead.color.opacity(0.18))
+                            .frame(width: 220, height: 220)
+                            .blur(radius: 36)
+                            .scaleEffect(animateIn ? 1.05 : 0.85)
+                        Image(systemName: "star.fill")
+                            .font(.system(size: 84))
+                            .foregroundStyle(lead.color)
+                            .shadow(color: lead.color.opacity(0.7), radius: animateIn ? 26 : 8)
+                            .scaleEffect(animateIn ? 1.0 : 0.6)
+                    }
+
+                    VStack(spacing: 10) {
+                        Text("Constellation confirmed")
+                            .font(.system(size: 13, weight: .semibold))
+                            .tracking(1.5)
+                            .foregroundStyle(Theme.textSecondary)
+                            .opacity(animateIn ? 1 : 0)
+
+                        Text(lead.name.isEmpty ? "(unnamed star)" : lead.name)
+                            .font(.system(size: 28, weight: .heavy))
+                            .fontDesign(.rounded)
+                            .foregroundStyle(Theme.textPrimary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 32)
+                            .opacity(animateIn ? 1 : 0)
+                            .offset(y: animateIn ? 0 : 6)
+                    }
+                }
+
+                // Supporting observations — appear as quiet text under the star,
+                // each on its own line, like a list of confirming sightlines.
+                if !supportingObservations.isEmpty {
+                    VStack(spacing: 6) {
+                        ForEach(Array(supportingObservations.prefix(4).enumerated()), id: \.offset) { index, obs in
+                            Text(obs)
+                                .font(.system(size: 13))
+                                .foregroundStyle(Theme.textDim)
+                                .multilineTextAlignment(.center)
+                                .opacity(animateIn ? 1 : 0)
+                                .animation(
+                                    .easeOut(duration: 0.5).delay(0.4 + Double(index) * 0.15),
+                                    value: animateIn
+                                )
+                        }
+                        if supportingObservations.count > 4 {
+                            Text("+ \(supportingObservations.count - 4) more")
+                                .font(.system(size: 11))
+                                .foregroundStyle(Theme.textMuted)
+                                .opacity(animateIn ? 1 : 0)
+                        }
+                    }
+                    .padding(.horizontal, 32)
+                }
+
+                Spacer()
+
+                Text("The brightest star isn't always the right one.\nThe steadiest one is.")
+                    .font(.system(size: 12))
+                    .italic()
+                    .foregroundStyle(Theme.textDim)
+                    .multilineTextAlignment(.center)
+                    .padding(.bottom, 60)
+                    .opacity(animateIn ? 1 : 0)
+                    .animation(.easeOut(duration: 0.6).delay(0.9), value: animateIn)
+            }
+        }
+        .onAppear {
+            withAnimation(.spring(response: 0.7, dampingFraction: 0.75)) {
+                animateIn = true
+            }
+        }
     }
 }

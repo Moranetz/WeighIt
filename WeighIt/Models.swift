@@ -83,6 +83,26 @@ enum Weight: String, Codable, CaseIterable {
         }
     }
 
+    /// Sky-quality label for credibility (source trust). Astronomical metaphor:
+    /// a clear sky lets you see the truth; a cloudy one obscures it.
+    var skyLabel: String {
+        switch self {
+        case .high: "Clear"
+        case .medium: "Hazy"
+        case .low: "Cloudy"
+        }
+    }
+
+    /// Sightline label for relevance (how directly the observation bears on the
+    /// hypothesis). Direct line of sight vs peripheral glimpse.
+    var sightLabel: String {
+        switch self {
+        case .high: "Direct"
+        case .medium: "Angle"
+        case .low: "Edge"
+        }
+    }
+
     var multiplier: Double {
         switch self {
         case .high: 3

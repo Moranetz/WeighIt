@@ -148,7 +148,8 @@ struct MatrixGridView: View {
                                 rating: rating,
                                 hasNote: hasNote,
                                 isDimmed: hyp.isRuledOut,
-                                isSelected: selectedCell == cellKey
+                                isSelected: selectedCell == cellKey,
+                                starColor: hyp.color
                             )
                             .frame(width: 110, height: 66)
                             .contentShape(Rectangle())
@@ -233,12 +234,57 @@ struct MatrixCellView: View {
     let hasNote: Bool
     let isDimmed: Bool
     let isSelected: Bool
+    let starColor: Color
     @State private var justSet = false
     @State private var emptyPulse = false
     private let ratingPulseDuration: Duration = .milliseconds(400)
 
+    /// Sightline opacity by rating strength. A strong supporting observation casts
+    /// a brighter line up to the star; a contradicting one casts a dimmer one.
+    /// Irrelevant ratings get no line — they don't draw your eye toward the star.
+    private var sightlineOpacity: Double {
+        guard let r = rating else { return 0 }
+        switch r {
+        case .stronglySupports: return 0.55
+        case .supports: return 0.32
+        case .irrelevant: return 0.05
+        case .contradicts: return 0.20
+        case .stronglyContradicts: return 0.32
+        }
+    }
+
+    /// Rated cells emit a sightline pointing upward toward their column's star.
+    /// Supporting ratings get the star's color (bright). Contradicting ratings get
+    /// red (negative pull). The visual effect: looking up a column you see a chain
+    /// of beams converging on the star header.
+    private var sightlineColor: Color {
+        guard let r = rating else { return .clear }
+        switch r {
+        case .stronglySupports, .supports: return starColor
+        case .stronglyContradicts, .contradicts: return Color(hex: "D4746A")
+        case .irrelevant: return Theme.textMuted
+        }
+    }
+
     var body: some View {
         ZStack {
+            // Sightline beam — a thin vertical line through the cell pointing toward
+            // the column header star. Layered behind everything so it reads as a
+            // background atmospheric glow, not foreground UI.
+            if rating != nil && !isDimmed && sightlineOpacity > 0.05 {
+                Rectangle()
+                    .fill(LinearGradient(
+                        colors: [
+                            sightlineColor.opacity(sightlineOpacity * 0.4),
+                            sightlineColor.opacity(sightlineOpacity)
+                        ],
+                        startPoint: .bottom,
+                        endPoint: .top
+                    ))
+                    .frame(width: 2)
+                    .blur(radius: 1.5)
+            }
+
             // Background
             if let r = rating, !isDimmed {
                 Rectangle()

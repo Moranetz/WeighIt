@@ -111,11 +111,11 @@ struct EvidenceRow: View {
                 .lineLimit(1...3)
 
             VStack(alignment: .trailing, spacing: 4) {
-                WeightPicker(label: "trust", value: Binding(
+                WeightPicker(label: "sky", kind: .sky, value: Binding(
                     get: { evidence.credWeight },
                     set: { evidence.credibility = $0.rawValue }
                 ))
-                WeightPicker(label: "rel", value: Binding(
+                WeightPicker(label: "view", kind: .sight, value: Binding(
                     get: { evidence.relWeight },
                     set: { evidence.relevance = $0.rawValue }
                 ))
@@ -141,8 +141,24 @@ struct EvidenceRow: View {
 // MARK: - Weight Picker
 
 struct WeightPicker: View {
+    enum Kind { case sky, sight, raw }
     let label: String
+    let kind: Kind
     @Binding var value: Weight
+
+    init(label: String, kind: Kind = .raw, value: Binding<Weight>) {
+        self.label = label
+        self.kind = kind
+        self._value = value
+    }
+
+    private func displayLabel(for w: Weight) -> String {
+        switch kind {
+        case .sky:   return w.skyLabel
+        case .sight: return w.sightLabel
+        case .raw:   return w.label
+        }
+    }
 
     var body: some View {
         HStack(spacing: 2) {
@@ -153,10 +169,10 @@ struct WeightPicker: View {
                 Button {
                     withAnimation(.spring(response: 0.2)) { value = w }
                 } label: {
-                    Text(w.label)
+                    Text(displayLabel(for: w))
                         .font(.system(size: 10, weight: .bold))
                         .foregroundStyle(value == w ? Theme.accent : Theme.textDim)
-                        .frame(width: 28, height: 20)
+                        .frame(width: 36, height: 20)
                         .background(
                             value == w ? Theme.accent.opacity(0.15) : Color.clear,
                             in: RoundedRectangle(cornerRadius: 5)
