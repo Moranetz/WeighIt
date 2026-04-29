@@ -15,7 +15,7 @@ struct BoardView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 14) {
+            VStack(spacing: 22) {
 
                 // Question
                 questionSection
@@ -262,29 +262,38 @@ struct BoardView: View {
                 showResults.toggle()
             }
         } label: {
-            Text(showResults ? "Hide constellation" : "Confirm the constellation ↓")
-                .font(.body)
-                .fontWeight(.bold)
-                .foregroundStyle(showResults ? Theme.textDim : Theme.bg)
-                .padding(.horizontal, 32)
-                .padding(.vertical, 16)
-                .background {
-                    if showResults {
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .fill(Theme.raised)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                    .strokeBorder(Theme.border, lineWidth: 1)
-                            )
-                    } else {
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .fill(Theme.accentGradient)
-                            .shadow(color: Theme.accent.opacity(0.3), radius: 16, y: 6)
-                    }
+            HStack(spacing: 8) {
+                if !showResults {
+                    Image(systemName: "sparkle")
+                        .font(.system(size: 13, weight: .semibold))
                 }
+                Text(showResults ? "Hide constellation" : "Confirm the constellation")
+                    .font(.system(.body, design: .rounded))
+                    .fontWeight(.semibold)
+                if !showResults {
+                    Image(systemName: "arrow.down")
+                        .font(.system(size: 11, weight: .bold))
+                        .opacity(0.7)
+                }
+            }
+            .foregroundStyle(showResults ? Theme.textSecondary : Theme.accent)
+            .padding(.horizontal, 28)
+            .padding(.vertical, 15)
+            .background {
+                ZStack {
+                    Capsule()
+                        .fill(showResults ? Color.white.opacity(0.025) : Theme.accent.opacity(0.08))
+                    Capsule()
+                        .strokeBorder(
+                            showResults ? Theme.border : Theme.accent.opacity(0.45),
+                            lineWidth: 1
+                        )
+                }
+                .shadow(color: showResults ? .clear : Theme.accent.opacity(0.35), radius: showResults ? 0 : 18)
+            }
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 4)
+        .padding(.vertical, 6)
     }
 
     // MARK: - Conclusion

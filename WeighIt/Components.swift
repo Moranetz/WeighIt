@@ -7,22 +7,36 @@ struct HypothesisRow: View {
     let canDelete: Bool
     let onDelete: () -> Void
     private let haptic = UIImpactFeedbackGenerator(style: .medium)
+    @State private var starPulse = false
 
     var body: some View {
-        HStack(spacing: 10) {
-            Circle()
-                .fill(hypothesis.color)
-                .frame(width: 12, height: 12)
-                .shadow(color: hypothesis.isRuledOut ? .clear : hypothesis.color.opacity(0.4), radius: 6)
+        HStack(spacing: 14) {
+            // The star — a glowing point that breathes with its hypothesis.
+            // When ruled out, the star is dimmed (visually "dimmed star").
+            ZStack {
+                Circle()
+                    .fill(hypothesis.color.opacity(hypothesis.isRuledOut ? 0 : 0.25))
+                    .frame(width: 38, height: 38)
+                    .blur(radius: 8)
+                    .scaleEffect(starPulse ? 1.05 : 0.95)
+                Image(systemName: hypothesis.isRuledOut ? "star.slash" : "star.fill")
+                    .font(.system(size: 16))
+                    .foregroundStyle(hypothesis.color)
+                    .shadow(color: hypothesis.isRuledOut ? .clear : hypothesis.color.opacity(0.6), radius: 6)
+            }
+            .frame(width: 32)
+            .animation(.easeInOut(duration: 2.4).repeatForever(autoreverses: true), value: starPulse)
+            .onAppear { starPulse = true }
 
             if hypothesis.isRuledOut {
-                Text(hypothesis.name.isEmpty ? "Explanation" : hypothesis.name)
-                    .font(.subheadline)
+                Text(hypothesis.name.isEmpty ? "Star" : hypothesis.name)
+                    .font(.system(.subheadline, design: .rounded))
                     .foregroundStyle(Theme.textSecondary)
                     .strikethrough()
             } else {
-                TextField("Explanation…", text: $hypothesis.name, axis: .vertical)
-                    .font(.subheadline)
+                TextField("Name this star…", text: $hypothesis.name, axis: .vertical)
+                    .font(.system(.subheadline, design: .rounded))
+                    .fontWeight(.medium)
                     .foregroundStyle(Theme.textPrimary)
                     .lineLimit(1...2)
             }
@@ -35,20 +49,20 @@ struct HypothesisRow: View {
                     hypothesis.isRuledOut.toggle()
                 }
             } label: {
-                Label(hypothesis.isRuledOut ? "undo" : "rule out",
-                      systemImage: hypothesis.isRuledOut ? "arrow.uturn.backward" : "xmark")
-                    .font(.system(size: 11, weight: .bold))
+                Label(hypothesis.isRuledOut ? "relight" : "dim",
+                      systemImage: hypothesis.isRuledOut ? "sparkles" : "moon.stars")
+                    .font(.system(size: 10, weight: .bold))
                     .foregroundStyle(hypothesis.isRuledOut ? Theme.positive : Theme.negative)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 5)
                     .background(
                         (hypothesis.isRuledOut ? Theme.positive : Theme.negative).opacity(0.1),
-                        in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        in: Capsule()
                     )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .strokeBorder((hypothesis.isRuledOut ? Theme.positive : Theme.negative).opacity(0.2), lineWidth: 1)
-                    )
+                    .overlay(Capsule().strokeBorder(
+                        (hypothesis.isRuledOut ? Theme.positive : Theme.negative).opacity(0.2),
+                        lineWidth: 1
+                    ))
             }
 
             if canDelete {
@@ -59,13 +73,31 @@ struct HypothesisRow: View {
                 }
             }
         }
-        .padding(12)
-        .background(Theme.raised, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .strokeBorder(Theme.border, lineWidth: 1)
-        )
-        .opacity(hypothesis.isRuledOut ? 0.5 : 1)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 11)
+        .background {
+            ZStack {
+                // Subtle vignette tinted with the star's color so each row reads as
+                // its own pocket of sky around its star.
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(Color.white.opacity(0.025))
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(LinearGradient(
+                        colors: [
+                            hypothesis.color.opacity(hypothesis.isRuledOut ? 0 : 0.10),
+                            Color.clear,
+                        ],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    ))
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(
+                        hypothesis.color.opacity(hypothesis.isRuledOut ? 0.06 : 0.18),
+                        lineWidth: 1
+                    )
+            }
+        }
+        .opacity(hypothesis.isRuledOut ? 0.55 : 1)
     }
 }
 
@@ -82,15 +114,21 @@ struct EvidenceRow: View {
     let isLast: Bool
 
     var body: some View {
-        HStack(spacing: 8) {
-            // Reorder
-            VStack(spacing: 0) {
+        HStack(alignment: .top, spacing: 10) {
+            // Reorder + observation index — like a numbered telescope log entry
+            VStack(spacing: 4) {
                 Button { onMoveUp() } label: {
                     Image(systemName: "chevron.up")
                         .font(.system(size: 9, weight: .bold))
                         .foregroundStyle(isFirst ? Theme.textMuted : Theme.textDim)
                 }
                 .disabled(isFirst)
+
+                Text("№\(index + 1)")
+                    .font(.system(size: 9, weight: .heavy, design: .rounded))
+                    .foregroundStyle(Theme.textMuted)
+                    .tracking(0.5)
+
                 Button { onMoveDown() } label: {
                     Image(systemName: "chevron.down")
                         .font(.system(size: 9, weight: .bold))
@@ -98,28 +136,28 @@ struct EvidenceRow: View {
                 }
                 .disabled(isLast)
             }
+            .frame(width: 24)
+            .padding(.top, 2)
 
-            Text("\(index + 1)")
-                .font(.caption2)
-                .fontWeight(.heavy)
-                .foregroundStyle(Theme.textMuted)
-                .frame(width: 18)
+            VStack(alignment: .leading, spacing: 8) {
+                TextField("Something you've observed…", text: $evidence.text, axis: .vertical)
+                    .font(.system(.subheadline, design: .rounded))
+                    .foregroundStyle(Theme.textPrimary)
+                    .lineLimit(1...3)
 
-            TextField("Something you've observed…", text: $evidence.text, axis: .vertical)
-                .font(.subheadline)
-                .foregroundStyle(Theme.textPrimary)
-                .lineLimit(1...3)
-
-            VStack(alignment: .trailing, spacing: 4) {
-                WeightPicker(label: "sky", kind: .sky, value: Binding(
-                    get: { evidence.credWeight },
-                    set: { evidence.credibility = $0.rawValue }
-                ))
-                WeightPicker(label: "view", kind: .sight, value: Binding(
-                    get: { evidence.relWeight },
-                    set: { evidence.relevance = $0.rawValue }
-                ))
+                HStack(spacing: 10) {
+                    WeightPicker(label: "sky", kind: .sky, value: Binding(
+                        get: { evidence.credWeight },
+                        set: { evidence.credibility = $0.rawValue }
+                    ))
+                    WeightPicker(label: "view", kind: .sight, value: Binding(
+                        get: { evidence.relWeight },
+                        set: { evidence.relevance = $0.rawValue }
+                    ))
+                }
             }
+
+            Spacer(minLength: 0)
 
             if canDelete {
                 Button(role: .destructive) { onDelete() } label: {
@@ -127,14 +165,20 @@ struct EvidenceRow: View {
                         .font(.caption2)
                         .foregroundStyle(Theme.textDim)
                 }
+                .padding(.top, 4)
             }
         }
-        .padding(12)
-        .background(Theme.raised, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .strokeBorder(Theme.border, lineWidth: 1)
-        )
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background {
+            ZStack {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(Color.white.opacity(0.022))
+                // Tiny twinkle in the corner — observation log entry asterism
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(Theme.border.opacity(0.7), lineWidth: 1)
+            }
+        }
     }
 }
 
