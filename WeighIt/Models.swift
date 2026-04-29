@@ -323,13 +323,47 @@ final class Board {
     var biasWarnings: [String] {
         var warnings: [String] = []
         for h in activeHypotheses {
-            let ratings = evidences.compactMap { rating(evidenceID: $0.id, hypothesisID: h.id) }
-            if ratings.count > 2 && ratings.allSatisfy({ $0 == .stronglySupports || $0 == .supports }) {
-                warnings.append("Everything supports \"\(h.name.isEmpty ? "one explanation" : h.name)\" — are you seeing what you want to see?")
+            if let warning = monotonicBias(for: h) {
+                warnings.append(warning)
             }
         }
         if evidences.count < 3 { warnings.append("Only a few data points. Could you be missing something?") }
         return warnings
+    }
+
+    /// Returns a brief inline bias warning for a single hypothesis column (3+ ratings, all
+    /// in the same direction). nil if the column is balanced or under-rated. Used by the
+    /// matrix to show bias detection inline at the column header — so users see it AS they
+    /// rate, not after they hit a "results" toggle.
+    func monotonicBias(for hypothesis: Hypothesis) -> String? {
+        guard !hypothesis.isRuledOut else { return nil }
+        let ratings = evidences.compactMap { rating(evidenceID: $0.id, hypothesisID: hypothesis.id) }
+        guard ratings.count >= 3 else { return nil }
+        let allSupport = ratings.allSatisfy { $0 == .stronglySupports || $0 == .supports }
+        let allOppose = ratings.allSatisfy { $0 == .stronglyContradicts || $0 == .contradicts }
+        if allSupport { return "No disconfirming evidence yet" }
+        if allOppose  { return "No supporting evidence yet" }
+        return nil
+    }
+
+    /// Returns the column score normalized to -1...1 for visual representation in the
+    /// matrix column header bar. nil when there's no signal yet (no ratings or all
+    /// neutral). Used to drive a thin colored bar that fills as evidence accumulates.
+    func normalizedScore(for hypothesis: Hypothesis) -> Double? {
+        guard !hypothesis.isRuledOut else { return nil }
+        let ratings = evidences.compactMap { ev -> (Rating, Double)? in
+            guard let r = rating(evidenceID: ev.id, hypothesisID: hypothesis.id) else { return nil }
+            let weight = ev.credWeight.multiplier * ev.relWeight.multiplier
+            return (r, weight)
+        }
+        guard !ratings.isEmpty else { return nil }
+        let total = ratings.reduce(0.0) { $0 + Double($1.0.value) * $1.1 }
+        // Max possible per cell = 2 * 9 (high * high * stronglySupports). Sum to scale.
+        let maxPossible = Double(ratings.count) * 2.0 * 9.0
+        guard maxPossible > 0 else { return nil }
+        let normalized = total / maxPossible
+        if normalized > -0.05 && normalized < 0.05 { return 0 }  // round near-zero to flat
+        return max(-1, min(1, normalized))
     }
 
     // MARK: Export

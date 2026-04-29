@@ -26,7 +26,7 @@ struct MatrixGridView: View {
                         .font(.system(size: 10, weight: .semibold))
                         .tracking(0.5)
                         .foregroundStyle(Theme.textDim)
-                        .frame(width: 150, height: 60, alignment: .leading)
+                        .frame(width: 150, height: 70, alignment: .leading)
                         .padding(.leading, 14)
                         .background(Color(hex: "161416"))
                         .overlay(alignment: .trailing) {
@@ -37,25 +37,53 @@ struct MatrixGridView: View {
                         }
 
                     ForEach(board.sortedHypotheses) { hyp in
-                        VStack(spacing: 5) {
-                            Circle()
-                                .fill(hyp.color)
-                                .frame(width: 10, height: 10)
-                                .shadow(color: hyp.color.opacity(0.5), radius: 4)
-                            Text(hypothesisTitle(for: hyp))
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundStyle(Theme.textSecondary)
-                                .lineLimit(2)
-                                .multilineTextAlignment(.center)
-                            if hyp.isRuledOut {
+                        let normScore = board.normalizedScore(for: hyp)
+                        let biasWarning = board.monotonicBias(for: hyp)
+                        VStack(spacing: 4) {
+                            HStack(spacing: 5) {
+                                Circle()
+                                    .fill(hyp.color)
+                                    .frame(width: 8, height: 8)
+                                    .shadow(color: hyp.color.opacity(0.5), radius: 3)
+                                Text(hypothesisTitle(for: hyp))
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundStyle(Theme.textSecondary)
+                                    .lineLimit(2)
+                                    .multilineTextAlignment(.leading)
+                            }
+                            .padding(.horizontal, 6)
+
+                            // Score bar — fills/shrinks as ratings accumulate. Reduces the urge
+                            // to skip to a separate "results" view by showing the column verdict
+                            // visually, in real time.
+                            ColumnScoreBar(score: normScore, color: hyp.color)
+                                .frame(height: 3)
+                                .padding(.horizontal, 8)
+
+                            // Inline bias chip — appears AS users rate, not gated behind a toggle.
+                            // The whole point of the app is bias surfacing; it can't hide.
+                            if let warning = biasWarning {
+                                Text(warning)
+                                    .font(.system(size: 8.5, weight: .semibold))
+                                    .foregroundStyle(Theme.warning)
+                                    .lineLimit(1)
+                                    .padding(.horizontal, 5)
+                                    .padding(.vertical, 1.5)
+                                    .background(Theme.warning.opacity(0.12), in: Capsule())
+                                    .overlay(Capsule().strokeBorder(Theme.warning.opacity(0.25), lineWidth: 0.5))
+                                    .padding(.horizontal, 4)
+                                    .transition(.scale.combined(with: .opacity))
+                            } else if hyp.isRuledOut {
                                 Text("RULED OUT")
                                     .font(.system(size: 8, weight: .bold))
                                     .foregroundStyle(Theme.negative)
                             }
                         }
-                        .frame(width: 110, height: 60)
+                        .frame(width: 110, height: 70)
                         .background(Color(hex: "161416"))
                         .opacity(hyp.isRuledOut ? 0.35 : 1)
+                        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: normScore)
+                        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: biasWarning)
                         .overlay(alignment: .trailing) {
                             Rectangle().fill(Theme.border).frame(width: 1)
                         }
@@ -145,6 +173,41 @@ struct MatrixGridView: View {
     }
 }
 
+// MARK: - Column Score Bar
+// Visualizes a hypothesis column's running score (-1...1) as a thin filling bar centered
+// on a midline. Pulls the eye to whichever hypothesis is gaining ground as the user rates.
+// Drives the "you couldn't avoid comparing" feel — the column is alive, not static.
+
+struct ColumnScoreBar: View {
+    let score: Double?       // -1 ... 1, or nil for "no signal yet"
+    let color: Color
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack {
+                Capsule()
+                    .fill(Theme.border.opacity(0.6))
+                if let s = score, abs(s) > 0.01 {
+                    let halfWidth = geo.size.width / 2
+                    let fillWidth = halfWidth * abs(s)
+                    let fillColor: Color = s > 0
+                        ? Color(hex: "7EC49B")            // positive score = green
+                        : Color(hex: "D4746A")            // negative score = red
+                    Capsule()
+                        .fill(fillColor)
+                        .frame(width: fillWidth)
+                        .offset(x: s > 0 ? fillWidth / 2 : -fillWidth / 2)
+                        .shadow(color: fillColor.opacity(0.4), radius: 3)
+                }
+                // midline tick — anchor for the bar
+                Rectangle()
+                    .fill(color.opacity(score == nil ? 0.5 : 0.7))
+                    .frame(width: 1.5, height: 5)
+            }
+        }
+    }
+}
+
 // MARK: - Matrix Cell
 
 struct MatrixCellView: View {
@@ -153,6 +216,7 @@ struct MatrixCellView: View {
     let isDimmed: Bool
     let isSelected: Bool
     @State private var justSet = false
+    @State private var emptyPulse = false
     private let ratingPulseDuration: Duration = .milliseconds(400)
 
     var body: some View {
@@ -161,8 +225,21 @@ struct MatrixCellView: View {
             if let r = rating, !isDimmed {
                 Rectangle()
                     .fill(r.bgColor.shadow(.inner(color: r.color.opacity(0.15), radius: 10)))
+            } else if !isDimmed {
+                // Empty cell: visibly incomplete. The whole point of the app is structured
+                // comparison — so unrated cells show a dashed border + slow pulsing dot
+                // instead of a passive "+". The user can't visually skip what isn't done.
+                ZStack {
+                    Color.white.opacity(0.012)
+                    RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        .strokeBorder(
+                            Theme.textMuted.opacity(0.3),
+                            style: StrokeStyle(lineWidth: 0.75, dash: [3, 3])
+                        )
+                        .padding(8)
+                }
             } else {
-                Color.white.opacity(isDimmed ? 0.01 : 0.015)
+                Color.white.opacity(0.01)
             }
 
             // Content
@@ -180,9 +257,16 @@ struct MatrixCellView: View {
                         .foregroundStyle(r.color)
                 }
             } else {
-                Image(systemName: "plus")
-                    .font(.system(size: 16, weight: .light))
-                    .foregroundStyle(Theme.textMuted)
+                // Pulsing dot marks the cell as a missing comparison.
+                Circle()
+                    .fill(Theme.textMuted.opacity(emptyPulse ? 0.55 : 0.25))
+                    .frame(width: 6, height: 6)
+                    .scaleEffect(emptyPulse ? 1.15 : 0.85)
+                    .animation(
+                        .easeInOut(duration: 1.6).repeatForever(autoreverses: true),
+                        value: emptyPulse
+                    )
+                    .onAppear { emptyPulse = true }
             }
 
             // Note indicator

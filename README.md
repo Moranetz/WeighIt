@@ -1,26 +1,37 @@
-# Weigh It
+# Reckon
+
+> *(formerly Weigh It — internal repo name unchanged)*
 
 [![iOS CI](https://github.com/melmarion/WeighIt/actions/workflows/ios-ci.yml/badge.svg)](https://github.com/melmarion/WeighIt/actions/workflows/ios-ci.yml)
 [![Android CI](https://github.com/melmarion/WeighIt/actions/workflows/android-ci.yml/badge.svg)](https://github.com/melmarion/WeighIt/actions/workflows/android-ci.yml)
 [![Status](https://img.shields.io/badge/status-native%20ios%20app-0f172a)](https://github.com/melmarion/WeighIt)
 
-Native decision-analysis app with:
+**Reckon forces structure on murky thinking.**
 
-- iOS 17 build in SwiftUI + SwiftData
-- Android build in Kotlin + Jetpack Compose + Room
+Question → competing hypotheses → weighted evidence → bias warnings → diagnostic view.
 
-`WeighIt` translates the CIA's Analysis of Competing Hypotheses method into a tactile mobile tool. Instead of keeping a messy grid in notes or a spreadsheet, the user builds a live board of hypotheses, evidence, ratings, exclusions, and notes inside a purpose-built interface that computes signal strength as the board fills in.
+You don't decide better because you wrote more — you decide better because you couldn't avoid comparing.
 
-## Why This Repo Matters
+Native iOS (SwiftUI + SwiftData) and Android (Kotlin + Jetpack Compose + Room) implementations of Analysis of Competing Hypotheses, the technique CIA analysts use to keep wishful thinking out of conclusions. Instead of keeping a messy grid in notes or a spreadsheet, you build a live board where every piece of evidence is rated against every hypothesis — and the structure of the matrix makes the gaps visible.
 
-The value here is not just CRUD around a list of ideas. The interesting layer is the decision model:
+## Why this matters
+
+Most decision tools let you write a long pros/cons list and call it analysis. That doesn't help — you can rationalize anything in prose.
+
+Reckon's value is what it WON'T let you do:
+
+- **You can't avoid the comparison.** The matrix forces every piece of evidence against every hypothesis. Empty cells are visibly incomplete (dashed border, pulsing dot) — your eye is pulled to gaps you'd otherwise skip.
+- **You can't avoid your bias.** When a column has 3+ ratings all in the same direction, an inline warning appears at the column header — *"No disconfirming evidence yet."* The bias surfaces while you rate, not gated behind a "results" toggle.
+- **You see the verdict shifting in real time.** Each hypothesis column has a thin score bar that fills as you accumulate evidence. The leading hypothesis emerges visually, not just calculated at the end.
+
+The interesting layer is the decision model:
 
 - hypotheses and evidence are first-class domain objects, not loose text blobs
-- per-cell ratings preserve nuance instead of collapsing everything to yes/no
-- exclusion and diagnostic evidence logic help the user see what actually changes the ranking
-- completion state, confetti, export, and bias warnings turn an analytical method into an app people will actually use
-
-This repo is a good example of taking a dense cognitive framework and mechanizing it into an iOS-native workflow.
+- per-cell ratings (Strong yes / Supports / Irrelevant / Contradicts / Strong no) preserve nuance instead of collapsing everything to yes/no
+- weighted evidence (credibility × relevance) so trustworthy + relevant data carries more weight
+- diagnostic evidence detection — which evidence actually distinguishes between hypotheses (vs. supports/contradicts everything equally)
+- bias warnings inline at the column level
+- structured exports to markdown for journaling and review
 
 ## Running Locally
 

@@ -169,6 +169,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 
+
+				INFOPLIST_KEY_CFBundleDisplayName = Reckon;
+
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -232,6 +235,9 @@
 		A90000000002 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+
+
+				INFOPLIST_KEY_CFBundleDisplayName = Reckon;
 
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				ALWAYS_SEARCH_USER_PATHS = NO;
