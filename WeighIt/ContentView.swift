@@ -8,6 +8,7 @@ struct ContentView: View {
     @State private var showBoardList = false
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
     @State private var showOnboarding = false
+    @State private var showExamplePicker = false
 
     var body: some View {
         NavigationStack {
@@ -66,7 +67,8 @@ struct ContentView: View {
                         }
 
                         Menu {
-                            Button("New Board", systemImage: "plus") { createNewBoard() }
+                            Button("New blank board", systemImage: "plus") { createNewBoard() }
+                            Button("Load example…", systemImage: "books.vertical") { showExamplePicker = true }
                             Divider()
                             if let board = activeBoard {
                                 ShareLink(item: board.exportMarkdown()) {
@@ -94,19 +96,43 @@ struct ContentView: View {
             .presentationDragIndicator(.visible)
         }
         .onAppear {
-            if boards.isEmpty {
-                let example = Board(isExample: true)
-                context.insert(example)
-                activeBoard = example
-            } else {
+            if !boards.isEmpty {
                 activeBoard = boards.first
             }
             if !hasSeenOnboarding {
                 showOnboarding = true
+            } else if boards.isEmpty {
+                // User completed onboarding previously but has no boards — show the picker
+                showExamplePicker = true
+            }
+        }
+        .onChange(of: showOnboarding) { _, newValue in
+            // When onboarding closes for the first time and no boards exist, present
+            // the example picker so the user lands on something tailored, not blank.
+            if !newValue && boards.isEmpty {
+                showExamplePicker = true
             }
         }
         .fullScreenCover(isPresented: $showOnboarding) {
             OnboardingView(isPresented: $showOnboarding)
+        }
+        .sheet(isPresented: $showExamplePicker) {
+            ExamplePickerView(
+                onPick: { archetype in
+                    let board = Board(archetype: archetype)
+                    context.insert(board)
+                    activeBoard = board
+                    showExamplePicker = false
+                },
+                onSkip: {
+                    let board = Board()
+                    context.insert(board)
+                    activeBoard = board
+                    showExamplePicker = false
+                }
+            )
+            .presentationDetents([.large])
+            .presentationDragIndicator(.visible)
         }
     }
 
@@ -482,6 +508,136 @@ struct OnboardingView: View {
                     .lineSpacing(1.5)
                     .fixedSize(horizontal: false, vertical: true)
             }
+        }
+    }
+}
+
+// MARK: - Example Picker
+// Shown after onboarding (and accessible from the toolbar Menu) so users can land on
+// a board that matches their domain instead of a generic founder example. ACH is
+// universal but the FRAMING isn't — a shortseller doesn't want to learn the method
+// through a startup launch postmortem.
+
+struct ExamplePickerView: View {
+    let onPick: (ExampleArchetype) -> Void
+    let onSkip: () -> Void
+
+    var body: some View {
+        ZStack {
+            // Same observatory backdrop as onboarding — continuity matters.
+            Color(hex: "0A0A12").ignoresSafeArea()
+            RadialGradient(colors: [Color(hex: "1A1426").opacity(0.6), .clear],
+                           center: .topLeading, startRadius: 0, endRadius: 600)
+                .ignoresSafeArea()
+            RadialGradient(colors: [Color(hex: "0F2436").opacity(0.5), .clear],
+                           center: .bottomTrailing, startRadius: 0, endRadius: 500)
+                .ignoresSafeArea()
+            StarfieldView(starCount: 110, seed: 23)
+                .ignoresSafeArea()
+
+            ScrollView {
+                VStack(spacing: 28) {
+                    VStack(spacing: 8) {
+                        Text("Pick a starter example")
+                            .font(.system(.title, design: .rounded))
+                            .fontWeight(.heavy)
+                            .foregroundStyle(Theme.textPrimary)
+
+                        Text("ACH works the same in every domain — but the framing matters.\nPick the lens closest to yours. You can always switch later.")
+                            .font(.subheadline)
+                            .foregroundStyle(Theme.textDim)
+                            .multilineTextAlignment(.center)
+                            .lineSpacing(3)
+                            .padding(.horizontal, 24)
+                    }
+                    .padding(.top, 28)
+
+                    LazyVGrid(
+                        columns: [GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14)],
+                        spacing: 14
+                    ) {
+                        ForEach(ExampleArchetype.allCases) { archetype in
+                            ArchetypeCard(archetype: archetype) {
+                                onPick(archetype)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 18)
+
+                    Button { onSkip() } label: {
+                        Text("Start with a blank board instead")
+                            .font(.subheadline)
+                            .underline()
+                            .foregroundStyle(Theme.textDim)
+                    }
+                    .padding(.top, 4)
+                    .padding(.bottom, 32)
+                }
+            }
+        }
+        .preferredColorScheme(.dark)
+    }
+}
+
+private struct ArchetypeCard: View {
+    let archetype: ExampleArchetype
+    let onTap: () -> Void
+    @State private var pressed = false
+
+    var body: some View {
+        Button(action: onTap) {
+            VStack(alignment: .leading, spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(Color(hex: archetype.accentHex).opacity(0.15))
+                        .frame(width: 52, height: 52)
+                        .blur(radius: 6)
+                    Image(systemName: archetype.icon)
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundStyle(Color(hex: archetype.accentHex))
+                }
+                .frame(height: 52)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(archetype.title)
+                        .font(.system(.subheadline, design: .rounded))
+                        .fontWeight(.heavy)
+                        .foregroundStyle(Theme.textPrimary)
+                    Text(archetype.subtitle)
+                        .font(.caption)
+                        .foregroundStyle(Theme.textDim)
+                        .italic()
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, minHeight: 140, alignment: .topLeading)
+            .background {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(.ultraThinMaterial.opacity(0.55))
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(LinearGradient(
+                            colors: [
+                                Color(hex: archetype.accentHex).opacity(0.10),
+                                Color.clear,
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ))
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .strokeBorder(Color(hex: archetype.accentHex).opacity(0.30), lineWidth: 1)
+                }
+                .shadow(color: Color(hex: archetype.accentHex).opacity(pressed ? 0.35 : 0.18), radius: pressed ? 14 : 8, y: 3)
+            }
+            .scaleEffect(pressed ? 0.97 : 1.0)
+            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: pressed)
+        }
+        .buttonStyle(.plain)
+        .onLongPressGesture(minimumDuration: 0, maximumDistance: 80, perform: {}) { isPressing in
+            pressed = isPressing
         }
     }
 }

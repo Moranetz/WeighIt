@@ -216,7 +216,7 @@ final class Board {
     @Relationship(deleteRule: .cascade) var evidences: [Evidence]
     @Relationship(deleteRule: .cascade) var cellRatings: [CellRating]
 
-    init(question: String = "", isExample: Bool = false) {
+    init(question: String = "", isExample: Bool = false, archetype: ExampleArchetype? = nil) {
         self.id = UUID()
         self.question = question
         self.conclusion = ""
@@ -226,8 +226,11 @@ final class Board {
         self.evidences = []
         self.cellRatings = []
 
-        if isExample {
-            setupExample()
+        if let archetype {
+            setupExample(archetype)
+        } else if isExample {
+            // Backward compat default: founder/product example
+            setupExample(.founder)
         } else {
             setupBlank()
         }
@@ -493,28 +496,266 @@ final class Board {
         evidences = [Evidence(sortOrder: 0)]
     }
 
-    private func setupExample() {
+    private func setupExample(_ archetype: ExampleArchetype = .founder) {
+        switch archetype {
+        case .shortseller:    setupShortsellerExample()
+        case .founder:        setupFounderExample()
+        case .scientist:      setupScientistExample()
+        case .investigator:   setupInvestigatorExample()
+        case .lifeDecision:   setupLifeDecisionExample()
+        case .diagnostician:  setupDiagnosticianExample()
+        }
+    }
+
+    // MARK: Founder / product example
+
+    private func setupFounderExample() {
         question = "Why did our latest product launch underperform?"
         let colors = HypothesisColors.all
 
         let h1 = Hypothesis(name: "Marketing didn't reach the right audience", colorHex: colors[0], sortOrder: 0)
         let h2 = Hypothesis(name: "The product has usability issues", colorHex: colors[1], sortOrder: 1)
         let h3 = Hypothesis(name: "Pricing is too high for the market", colorHex: colors[2], sortOrder: 2)
-        hypotheses = [h1, h2, h3]
+        let h4 = Hypothesis(name: "Timing was wrong — market not ready", colorHex: colors[3], sortOrder: 3)
+        hypotheses = [h1, h2, h3, h4]
 
-        let e1 = Evidence(text: "Social media impressions were up 40%", credibility: .high, relevance: .high, sortOrder: 0)
+        let e1 = Evidence(text: "Social media impressions up 40%", credibility: .high, relevance: .high, sortOrder: 0)
         let e2 = Evidence(text: "Support tickets doubled in the first week", credibility: .high, relevance: .high, sortOrder: 1)
         let e3 = Evidence(text: "Competitors priced 20% lower", credibility: .medium, relevance: .high, sortOrder: 2)
         let e4 = Evidence(text: "Users who finished onboarding had great retention", credibility: .medium, relevance: .medium, sortOrder: 3)
-        evidences = [e1, e2, e3, e4]
+        let e5 = Evidence(text: "Search volume for category up only 5% YoY", credibility: .medium, relevance: .medium, sortOrder: 4)
+        evidences = [e1, e2, e3, e4, e5]
 
         cellRatings = [
-            CellRating(evidenceID: e1.id, hypothesisID: h1.id, rating: .contradicts, note: "Impressions up = marketing DID reach people"),
+            CellRating(evidenceID: e1.id, hypothesisID: h1.id, rating: .stronglyContradicts, note: "Impressions up = marketing DID reach people"),
             CellRating(evidenceID: e2.id, hypothesisID: h2.id, rating: .stronglySupports, note: "Support tickets = confused users"),
             CellRating(evidenceID: e3.id, hypothesisID: h3.id, rating: .stronglySupports),
             CellRating(evidenceID: e3.id, hypothesisID: h1.id, rating: .irrelevant),
-            CellRating(evidenceID: e4.id, hypothesisID: h2.id, rating: .contradicts, note: "Good retention after onboarding → maybe onboarding issue, not product"),
+            CellRating(evidenceID: e4.id, hypothesisID: h2.id, rating: .contradicts, note: "Good retention post-onboarding → maybe onboarding, not product"),
+            CellRating(evidenceID: e5.id, hypothesisID: h4.id, rating: .supports, note: "Slow category growth = market still warming up"),
         ]
+    }
+
+    // MARK: Shortseller / financial-analyst example
+
+    private func setupShortsellerExample() {
+        question = "Is Acme Corp's reported growth real, or are they cooking the books?"
+        let colors = HypothesisColors.all
+
+        let h1 = Hypothesis(name: "Real organic growth", colorHex: colors[0], sortOrder: 0)
+        let h2 = Hypothesis(name: "Earnings management (channel stuffing, AR aging)", colorHex: colors[1], sortOrder: 1)
+        let h3 = Hypothesis(name: "Outright accounting fraud", colorHex: colors[6], sortOrder: 2)
+        let h4 = Hypothesis(name: "One-time tailwind treated as recurring", colorHex: colors[3], sortOrder: 3)
+        hypotheses = [h1, h2, h3, h4]
+
+        let e1 = Evidence(text: "DSO rose 40% YoY", credibility: .high, relevance: .high, sortOrder: 0)
+        let e2 = Evidence(text: "C-suite insider selling spiked last quarter", credibility: .high, relevance: .medium, sortOrder: 1)
+        let e3 = Evidence(text: "Top 3 customers = 60% of revenue", credibility: .high, relevance: .high, sortOrder: 2)
+        let e4 = Evidence(text: "Auditor changed mid-year", credibility: .medium, relevance: .high, sortOrder: 3)
+        let e5 = Evidence(text: "Revenue growth +30%, operating cash flow flat", credibility: .high, relevance: .high, sortOrder: 4)
+        evidences = [e1, e2, e3, e4, e5]
+
+        cellRatings = [
+            CellRating(evidenceID: e1.id, hypothesisID: h1.id, rating: .contradicts, note: "Healthy growth doesn't blow out DSO"),
+            CellRating(evidenceID: e1.id, hypothesisID: h2.id, rating: .stronglySupports, note: "Classic channel-stuffing tell"),
+            CellRating(evidenceID: e1.id, hypothesisID: h3.id, rating: .supports),
+            CellRating(evidenceID: e2.id, hypothesisID: h1.id, rating: .contradicts),
+            CellRating(evidenceID: e2.id, hypothesisID: h3.id, rating: .stronglySupports, note: "Insiders know first"),
+            CellRating(evidenceID: e3.id, hypothesisID: h4.id, rating: .supports, note: "Concentration = lumpy, episodic revenue"),
+            CellRating(evidenceID: e4.id, hypothesisID: h1.id, rating: .contradicts),
+            CellRating(evidenceID: e4.id, hypothesisID: h3.id, rating: .stronglySupports, note: "Auditor changes mid-cycle = red flag"),
+            CellRating(evidenceID: e5.id, hypothesisID: h1.id, rating: .stronglyContradicts, note: "Real growth converts to cash"),
+            CellRating(evidenceID: e5.id, hypothesisID: h2.id, rating: .stronglySupports, note: "Accruals without cash = aggressive recognition"),
+        ]
+    }
+
+    // MARK: Researcher / scientist example
+
+    private func setupScientistExample() {
+        question = "Why isn't our published finding replicating in independent studies?"
+        let colors = HypothesisColors.all
+
+        let h1 = Hypothesis(name: "Original finding is real — replication conditions differed", colorHex: colors[0], sortOrder: 0)
+        let h2 = Hypothesis(name: "P-hacking or publication bias inflated the original", colorHex: colors[1], sortOrder: 1)
+        let h3 = Hypothesis(name: "Replication had insufficient power or sample mismatch", colorHex: colors[2], sortOrder: 2)
+        let h4 = Hypothesis(name: "Measurement instrument inconsistency between studies", colorHex: colors[3], sortOrder: 3)
+        hypotheses = [h1, h2, h3, h4]
+
+        let e1 = Evidence(text: "Replication used different demographic", credibility: .high, relevance: .high, sortOrder: 0)
+        let e2 = Evidence(text: "Original p-value was 0.048 (right at threshold)", credibility: .high, relevance: .high, sortOrder: 1)
+        let e3 = Evidence(text: "Replication n=1200, original n=84", credibility: .high, relevance: .high, sortOrder: 2)
+        let e4 = Evidence(text: "Replication used updated measurement protocol", credibility: .medium, relevance: .high, sortOrder: 3)
+        let e5 = Evidence(text: "5 of 7 conceptual replications also failed", credibility: .high, relevance: .high, sortOrder: 4)
+        evidences = [e1, e2, e3, e4, e5]
+
+        cellRatings = [
+            CellRating(evidenceID: e1.id, hypothesisID: h1.id, rating: .stronglySupports, note: "Could explain divergence"),
+            CellRating(evidenceID: e1.id, hypothesisID: h2.id, rating: .irrelevant),
+            CellRating(evidenceID: e2.id, hypothesisID: h2.id, rating: .supports, note: "Borderline p suggests fragility"),
+            CellRating(evidenceID: e2.id, hypothesisID: h1.id, rating: .contradicts),
+            CellRating(evidenceID: e3.id, hypothesisID: h3.id, rating: .stronglyContradicts, note: "1200 is plenty of power"),
+            CellRating(evidenceID: e3.id, hypothesisID: h1.id, rating: .contradicts),
+            CellRating(evidenceID: e4.id, hypothesisID: h4.id, rating: .stronglySupports),
+            CellRating(evidenceID: e5.id, hypothesisID: h1.id, rating: .stronglyContradicts, note: "Multiple conceptual failures kills the conditions argument"),
+            CellRating(evidenceID: e5.id, hypothesisID: h2.id, rating: .stronglySupports, note: "Pattern of failure → original was likely fragile"),
+        ]
+    }
+
+    // MARK: Investigator / journalist example
+
+    private func setupInvestigatorExample() {
+        question = "What really happened in the security breach?"
+        let colors = HypothesisColors.all
+
+        let h1 = Hypothesis(name: "External attacker exploited an unpatched system", colorHex: colors[0], sortOrder: 0)
+        let h2 = Hypothesis(name: "An insider with credentials acted maliciously", colorHex: colors[1], sortOrder: 1)
+        let h3 = Hypothesis(name: "Third-party vendor was compromised first", colorHex: colors[2], sortOrder: 2)
+        let h4 = Hypothesis(name: "Misreported normal access — no breach occurred", colorHex: colors[5], sortOrder: 3)
+        hypotheses = [h1, h2, h3, h4]
+
+        let e1 = Evidence(text: "Logs show access at 3am from a new IP", credibility: .high, relevance: .high, sortOrder: 0)
+        let e2 = Evidence(text: "One employee's credentials used 3× outside their normal role", credibility: .high, relevance: .high, sortOrder: 1)
+        let e3 = Evidence(text: "Vendor reported their own breach 2 weeks earlier", credibility: .high, relevance: .high, sortOrder: 2)
+        let e4 = Evidence(text: "No data exfiltration found in 2 weeks of forensics", credibility: .medium, relevance: .high, sortOrder: 3)
+        let e5 = Evidence(text: "Affected systems all have public CVEs from 6 months ago", credibility: .high, relevance: .medium, sortOrder: 4)
+        evidences = [e1, e2, e3, e4, e5]
+
+        cellRatings = [
+            CellRating(evidenceID: e1.id, hypothesisID: h1.id, rating: .stronglySupports),
+            CellRating(evidenceID: e1.id, hypothesisID: h2.id, rating: .contradicts, note: "Insider would use familiar IP / hours"),
+            CellRating(evidenceID: e2.id, hypothesisID: h2.id, rating: .stronglySupports),
+            CellRating(evidenceID: e2.id, hypothesisID: h1.id, rating: .supports, note: "Stolen creds also fit"),
+            CellRating(evidenceID: e3.id, hypothesisID: h3.id, rating: .stronglySupports),
+            CellRating(evidenceID: e3.id, hypothesisID: h4.id, rating: .stronglyContradicts, note: "Confirmed prior breach makes 'no breach' implausible"),
+            CellRating(evidenceID: e4.id, hypothesisID: h1.id, rating: .contradicts),
+            CellRating(evidenceID: e4.id, hypothesisID: h4.id, rating: .supports),
+            CellRating(evidenceID: e5.id, hypothesisID: h1.id, rating: .supports, note: "Unpatched CVEs + new IP = textbook"),
+        ]
+    }
+
+    // MARK: Personal life-decision example
+
+    private func setupLifeDecisionExample() {
+        question = "Should I take this new job offer?"
+        let colors = HypothesisColors.all
+
+        let h1 = Hypothesis(name: "Yes — significantly better long-term", colorHex: colors[0], sortOrder: 0)
+        let h2 = Hypothesis(name: "Yes — better short-term but not long-term", colorHex: colors[3], sortOrder: 1)
+        let h3 = Hypothesis(name: "No — current role is undervalued by me", colorHex: colors[5], sortOrder: 2)
+        let h4 = Hypothesis(name: "No — wait, better options will appear", colorHex: colors[2], sortOrder: 3)
+        hypotheses = [h1, h2, h3, h4]
+
+        let e1 = Evidence(text: "25% comp increase", credibility: .high, relevance: .high, sortOrder: 0)
+        let e2 = Evidence(text: "New role grows skills I want for 5-yr trajectory", credibility: .high, relevance: .high, sortOrder: 1)
+        let e3 = Evidence(text: "New manager has bad reputation in industry", credibility: .medium, relevance: .high, sortOrder: 2)
+        let e4 = Evidence(text: "Current company likely to IPO in 18 months", credibility: .medium, relevance: .high, sortOrder: 3)
+        let e5 = Evidence(text: "Commute would double", credibility: .high, relevance: .medium, sortOrder: 4)
+        evidences = [e1, e2, e3, e4, e5]
+
+        cellRatings = [
+            CellRating(evidenceID: e1.id, hypothesisID: h1.id, rating: .supports),
+            CellRating(evidenceID: e1.id, hypothesisID: h2.id, rating: .stronglySupports, note: "Comp jump alone could be short-term win"),
+            CellRating(evidenceID: e2.id, hypothesisID: h1.id, rating: .stronglySupports),
+            CellRating(evidenceID: e2.id, hypothesisID: h2.id, rating: .contradicts),
+            CellRating(evidenceID: e3.id, hypothesisID: h1.id, rating: .stronglyContradicts, note: "Bad manager destroys long-term upside"),
+            CellRating(evidenceID: e3.id, hypothesisID: h4.id, rating: .supports, note: "Reason to wait"),
+            CellRating(evidenceID: e4.id, hypothesisID: h3.id, rating: .stronglySupports, note: "IPO upside is concrete"),
+            CellRating(evidenceID: e4.id, hypothesisID: h4.id, rating: .supports),
+            CellRating(evidenceID: e5.id, hypothesisID: h1.id, rating: .contradicts),
+        ]
+    }
+
+    // MARK: Differential-diagnosis example
+
+    private func setupDiagnosticianExample() {
+        question = "What's most likely causing this patient's chronic fatigue?"
+        let colors = HypothesisColors.all
+
+        let h1 = Hypothesis(name: "Iron-deficiency anemia", colorHex: colors[0], sortOrder: 0)
+        let h2 = Hypothesis(name: "Subclinical hypothyroidism", colorHex: colors[1], sortOrder: 1)
+        let h3 = Hypothesis(name: "Undiagnosed sleep apnea", colorHex: colors[2], sortOrder: 2)
+        let h4 = Hypothesis(name: "Major depressive disorder", colorHex: colors[5], sortOrder: 3)
+        let h5 = Hypothesis(name: "Chronic infection (post-viral, Lyme, EBV)", colorHex: colors[6], sortOrder: 4)
+        hypotheses = [h1, h2, h3, h4, h5]
+
+        let e1 = Evidence(text: "Hemoglobin 11.5 (low end of normal)", credibility: .high, relevance: .medium, sortOrder: 0)
+        let e2 = Evidence(text: "TSH 4.2 (slightly elevated)", credibility: .high, relevance: .high, sortOrder: 1)
+        let e3 = Evidence(text: "BMI 32, sleeps 9h but reports unrefreshed", credibility: .high, relevance: .high, sortOrder: 2)
+        let e4 = Evidence(text: "Anhedonia and low mood × 3 months", credibility: .high, relevance: .high, sortOrder: 3)
+        let e5 = Evidence(text: "Recent travel to tick-endemic area", credibility: .high, relevance: .medium, sortOrder: 4)
+        evidences = [e1, e2, e3, e4, e5]
+
+        cellRatings = [
+            CellRating(evidenceID: e1.id, hypothesisID: h1.id, rating: .supports, note: "Borderline; iron studies needed"),
+            CellRating(evidenceID: e1.id, hypothesisID: h2.id, rating: .irrelevant),
+            CellRating(evidenceID: e2.id, hypothesisID: h2.id, rating: .stronglySupports),
+            CellRating(evidenceID: e2.id, hypothesisID: h1.id, rating: .contradicts),
+            CellRating(evidenceID: e3.id, hypothesisID: h3.id, rating: .stronglySupports, note: "Classic OSA presentation"),
+            CellRating(evidenceID: e3.id, hypothesisID: h4.id, rating: .irrelevant),
+            CellRating(evidenceID: e4.id, hypothesisID: h4.id, rating: .stronglySupports),
+            CellRating(evidenceID: e4.id, hypothesisID: h3.id, rating: .supports, note: "OSA can cause depressive symptoms"),
+            CellRating(evidenceID: e5.id, hypothesisID: h5.id, rating: .supports),
+        ]
+    }
+}
+
+// MARK: - Example Archetypes
+
+enum ExampleArchetype: String, CaseIterable, Identifiable {
+    case shortseller    = "shortseller"
+    case founder        = "founder"
+    case scientist      = "scientist"
+    case investigator   = "investigator"
+    case lifeDecision   = "life"
+    case diagnostician  = "doctor"
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .shortseller:   "The shortseller"
+        case .founder:       "The founder"
+        case .scientist:     "The researcher"
+        case .investigator:  "The investigator"
+        case .lifeDecision:  "The big personal call"
+        case .diagnostician: "The diagnostician"
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .shortseller:   "Are these numbers real?"
+        case .founder:       "Why didn't this work?"
+        case .scientist:     "Why isn't this replicating?"
+        case .investigator:  "What actually happened?"
+        case .lifeDecision:  "Should I take the offer?"
+        case .diagnostician: "What's the differential?"
+        }
+    }
+
+    /// SF Symbol for the archetype card.
+    var icon: String {
+        switch self {
+        case .shortseller:   "chart.line.downtrend.xyaxis"
+        case .founder:       "rocket"
+        case .scientist:     "atom"
+        case .investigator:  "doc.text.magnifyingglass"
+        case .lifeDecision:  "signpost.right.and.left"
+        case .diagnostician: "stethoscope"
+        }
+    }
+
+    /// Hex color used to tint the archetype's card edge — keeps the night-sky
+    /// aesthetic but gives each archetype a recognizable signal.
+    var accentHex: String {
+        switch self {
+        case .shortseller:   "D4746A"  // alarm red — danger
+        case .founder:       "EF8B6E"  // warm peach — building
+        case .scientist:     "5CC4B8"  // teal — clarity
+        case .investigator:  "7E9BE0"  // night blue — depth
+        case .lifeDecision:  "C490D4"  // violet — values
+        case .diagnostician: "6EC4A0"  // green — health
+        }
     }
 }
 
