@@ -76,3 +76,52 @@ struct SectionLabel: View {
             .foregroundStyle(Theme.textSecondary)
     }
 }
+
+// MARK: - Starfield
+// A subtle scattered star backdrop. Static (no animation, no procedural generation per
+// frame) — uses a stable seed so the pattern is consistent across launches. Anchors the
+// astronomy metaphor without being distracting.
+
+struct StarfieldView: View {
+    let starCount: Int
+    private let seed: UInt64
+
+    init(starCount: Int = 80, seed: UInt64 = 47) {
+        self.starCount = starCount
+        self.seed = seed
+    }
+
+    var body: some View {
+        GeometryReader { geo in
+            Canvas { context, size in
+                var rng = SeededGenerator(seed: seed)
+                for _ in 0..<starCount {
+                    let x = Double.random(in: 0...size.width, using: &rng)
+                    let y = Double.random(in: 0...size.height, using: &rng)
+                    let r = Double.random(in: 0.4...1.4, using: &rng)
+                    let alpha = Double.random(in: 0.10...0.42, using: &rng)
+                    let rect = CGRect(x: x - r, y: y - r, width: r * 2, height: r * 2)
+                    context.fill(
+                        Path(ellipseIn: rect),
+                        with: .color(.white.opacity(alpha))
+                    )
+                }
+            }
+            .frame(width: geo.size.width, height: geo.size.height)
+        }
+        .allowsHitTesting(false)
+    }
+}
+
+private struct SeededGenerator: RandomNumberGenerator {
+    var state: UInt64
+    init(seed: UInt64) { self.state = seed != 0 ? seed : 0xdeadbeef }
+    mutating func next() -> UInt64 {
+        // SplitMix64 — fast, stable, good distribution
+        state &+= 0x9E3779B97F4A7C15
+        var z = state
+        z = (z ^ (z >> 30)) &* 0xBF58476D1CE4E5B9
+        z = (z ^ (z >> 27)) &* 0x94D049BB133111EB
+        return z ^ (z >> 31)
+    }
+}

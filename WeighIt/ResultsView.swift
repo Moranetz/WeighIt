@@ -32,10 +32,19 @@ struct ResultsView: View {
 
     private var rankingCard: some View {
         VStack(alignment: .leading, spacing: 14) {
-            SectionLabel(text: "Which explanation holds up best?")
+            // "Constellation Confirmed" header — the verdict moment. Quietly emphasizes
+            // that ranking is by stability (fewest refutations), not popularity.
+            VStack(alignment: .leading, spacing: 4) {
+                SectionLabel(text: "Constellation confirmed")
+                Text("Ranked by what hasn't been knocked down — fewest refutations first, with a tiebreak on most support.")
+                    .font(.caption)
+                    .foregroundStyle(Theme.textDim)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
             ForEach(Array(board.rankedHypotheses.enumerated()), id: \.element.hypothesis.id) { index, item in
                 let isFirst = index == 0
+                let stability = board.stability(for: item.hypothesis)
 
                 HStack(spacing: 14) {
                     Text("\(index + 1)")
@@ -45,34 +54,52 @@ struct ResultsView: View {
                         .frame(width: 32, alignment: .trailing)
                         .fontDesign(.rounded)
 
-                    Circle()
-                        .fill(item.hypothesis.color)
-                        .frame(width: 12, height: 12)
-                        .shadow(color: item.hypothesis.color.opacity(0.4), radius: 6)
+                    // Star — sized + glow proportional to stability, not raw score.
+                    Image(systemName: stability > 0.85 ? "star.fill" : "star")
+                        .font(.system(size: isFirst ? 18 : 14))
+                        .foregroundStyle(item.hypothesis.color)
+                        .shadow(color: item.hypothesis.color.opacity(stability * 0.8), radius: stability * (isFirst ? 8 : 5))
+                        .opacity(0.4 + stability * 0.6)
 
                     VStack(alignment: .leading, spacing: 5) {
-                        Text(item.hypothesis.name.isEmpty ? "Explanation \(index + 1)" : item.hypothesis.name)
+                        Text(item.hypothesis.name.isEmpty ? "Star \(index + 1)" : item.hypothesis.name)
                             .font(.subheadline)
                             .fontWeight(.semibold)
                             .foregroundStyle(Theme.textPrimary)
 
-                        GeometryReader { geo in
-                            ZStack(alignment: .leading) {
-                                RoundedRectangle(cornerRadius: 3)
-                                    .fill(Color.white.opacity(0.04))
-                                    .frame(height: 5)
-                                RoundedRectangle(cornerRadius: 3)
-                                    .fill(item.score >= 0
-                                          ? LinearGradient(colors: [item.hypothesis.color.opacity(0.5), item.hypothesis.color], startPoint: .leading, endPoint: .trailing)
-                                          : LinearGradient(colors: [Theme.negative.opacity(0.5), Theme.negative], startPoint: .leading, endPoint: .trailing))
-                                    .frame(width: animateIn ? barWidth(score: item.score, maxAbs: board.maxAbsScore, totalWidth: geo.size.width) : 0, height: 5)
-                                    .animation(.spring(response: 0.7, dampingFraction: 0.7).delay(Double(index) * 0.1), value: animateIn)
+                        // Refutation/support summary line — explicit about the two-signal
+                        // ranking. Reads like a scoreline so users see the actual ACH math.
+                        HStack(spacing: 8) {
+                            HStack(spacing: 3) {
+                                Circle()
+                                    .fill(Color(hex: "D4746A"))
+                                    .frame(width: 5, height: 5)
+                                Text("\(item.refutations) refuted")
+                                    .font(.system(size: 10, weight: .semibold))
+                                    .foregroundStyle(item.refutations == 0 ? Theme.positive : Color(hex: "D4746A"))
+                            }
+                            HStack(spacing: 3) {
+                                Circle()
+                                    .fill(Theme.positive)
+                                    .frame(width: 5, height: 5)
+                                Text("\(item.supports) supported")
+                                    .font(.system(size: 10, weight: .semibold))
+                                    .foregroundStyle(Theme.textDim)
                             }
                         }
-                        .frame(height: 5)
                     }
 
-                    AnimatedScoreText(score: item.score)
+                    Spacer()
+
+                    // Stability percent — the real ACH ranking signal.
+                    Text("\(Int(stability * 100))%")
+                        .font(.body)
+                        .fontWeight(.heavy)
+                        .fontDesign(.rounded)
+                        .foregroundStyle(isFirst ? Theme.positive : Theme.textDim)
+                        .frame(minWidth: 50, alignment: .trailing)
+                        .contentTransition(.numericText(value: stability * 100))
+                        .animation(.spring(response: 0.4), value: stability)
                 }
                 .padding(.vertical, 4)
 
@@ -86,7 +113,7 @@ struct ResultsView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Divider().overlay(Theme.border)
                     HStack(spacing: 4) {
-                        Text("Ruled out:")
+                        Text("Dimmed (ruled out):")
                             .font(.caption)
                             .fontWeight(.bold)
                             .foregroundStyle(Theme.negative)
@@ -99,14 +126,19 @@ struct ResultsView: View {
                 .padding(.top, 4)
             }
 
-            // Tip
+            // Tagline at the verdict moment
             HStack(alignment: .top, spacing: 8) {
-                Image(systemName: "lightbulb.fill")
+                Image(systemName: "sparkles")
                     .foregroundStyle(Theme.accent)
-                Text("The best explanation isn't the one with the most support — it's the one with the fewest contradictions.")
-                    .font(.caption)
-                    .foregroundStyle(Theme.textDim)
-                    .lineSpacing(2)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("The brightest star isn't always the right one.")
+                        .font(.caption)
+                        .foregroundStyle(Theme.textPrimary)
+                    Text("The steadiest one — the one no observation has dimmed — is.")
+                        .font(.caption)
+                        .foregroundStyle(Theme.textDim)
+                        .lineSpacing(2)
+                }
             }
             .padding(12)
             .background(Theme.accent.opacity(0.05), in: RoundedRectangle(cornerRadius: 12))

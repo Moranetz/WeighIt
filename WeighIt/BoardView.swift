@@ -76,7 +76,7 @@ struct BoardView: View {
 
     private var questionSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            SectionLabel(text: "What are you trying to figure out?")
+            SectionLabel(text: "The question")
             TextField("e.g. Why are signups dropping?", text: $board.question, axis: .vertical)
                 .font(.body)
                 .fontWeight(.medium)
@@ -96,7 +96,13 @@ struct BoardView: View {
     private var hypothesesSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                SectionLabel(text: "Possible explanations")
+                VStack(alignment: .leading, spacing: 2) {
+                    SectionLabel(text: "Stars to test")
+                    Text("Each candidate explanation. Reckon ranks them by what hasn't been knocked down — not by what has the most support.")
+                        .font(.caption)
+                        .foregroundStyle(Theme.textDim)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 Spacer()
                 if board.hypotheses.count < 7 {
                     Button {
@@ -136,10 +142,11 @@ struct BoardView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    SectionLabel(text: "What do you know so far?")
-                    Text("Data, observations, gut feelings. Drag to reorder.")
+                    SectionLabel(text: "Observation log")
+                    Text("Each piece of evidence is one observation. Credibility × relevance is your viewing condition.")
                         .font(.caption)
                         .foregroundStyle(Theme.textDim)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer()
                 Button {
@@ -182,7 +189,13 @@ struct BoardView: View {
     private var matrixSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                SectionLabel(text: "Weigh each piece against each explanation")
+                VStack(alignment: .leading, spacing: 2) {
+                    SectionLabel(text: "The star chart")
+                    Text("Each cell is one sightline: this observation against this star. Empty sightlines pulse to remind you they're unobserved.")
+                        .font(.caption)
+                        .foregroundStyle(Theme.textDim)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 Spacer()
                 if board.filledCells > 0 {
                     Text("\(board.filledCells)/\(board.totalCells)")
@@ -191,10 +204,6 @@ struct BoardView: View {
                         .foregroundStyle(Theme.textDim)
                 }
             }
-
-            Text("Tap any cell to rate it.")
-                .font(.caption)
-                .foregroundStyle(Theme.textDim)
 
             // Legend
             ScrollView(.horizontal, showsIndicators: false) {
@@ -254,7 +263,7 @@ struct BoardView: View {
                 showResults.toggle()
             }
         } label: {
-            Text(showResults ? "Hide results" : "See what the evidence says ↓")
+            Text(showResults ? "Hide constellation" : "Confirm the constellation ↓")
                 .font(.body)
                 .fontWeight(.bold)
                 .foregroundStyle(showResults ? Theme.textDim : Theme.bg)
@@ -311,11 +320,18 @@ struct BoardView: View {
     // MARK: - Footer
 
     private var footerView: some View {
-        Text("Based on Analysis of Competing Hypotheses — a thinking technique from intelligence analysis. Made friendly.")
-            .font(.caption2)
-            .foregroundStyle(Theme.textMuted)
-            .multilineTextAlignment(.center)
-            .padding(.top, 20)
+        VStack(spacing: 6) {
+            Text("The brightest star isn't always the right one.\nThe steadiest one is.")
+                .font(.caption2)
+                .italic()
+                .foregroundStyle(Theme.textDim)
+                .multilineTextAlignment(.center)
+            Text("Based on Analysis of Competing Hypotheses — the technique CIA analysts use to keep wishful thinking out of conclusions.")
+                .font(.caption2)
+                .foregroundStyle(Theme.textMuted)
+                .multilineTextAlignment(.center)
+        }
+        .padding(.top, 20)
     }
 
     // MARK: - Helpers

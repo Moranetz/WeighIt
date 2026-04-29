@@ -6,32 +6,62 @@
 [![Android CI](https://github.com/melmarion/WeighIt/actions/workflows/android-ci.yml/badge.svg)](https://github.com/melmarion/WeighIt/actions/workflows/android-ci.yml)
 [![Status](https://img.shields.io/badge/status-native%20ios%20app-0f172a)](https://github.com/melmarion/WeighIt)
 
-**Reckon forces structure on murky thinking.**
+**Reckon ranks hypotheses by what hasn't been knocked down — not by what has the most support.**
 
-Question → competing hypotheses → weighted evidence → bias warnings → diagnostic view.
+A star map for decisions. The brightest star isn't always the right one. The steadiest one is.
 
-You don't decide better because you wrote more — you decide better because you couldn't avoid comparing.
+You don't decide better because you wrote more. You decide better because you couldn't avoid comparing.
 
-Native iOS (SwiftUI + SwiftData) and Android (Kotlin + Jetpack Compose + Room) implementations of Analysis of Competing Hypotheses, the technique CIA analysts use to keep wishful thinking out of conclusions. Instead of keeping a messy grid in notes or a spreadsheet, you build a live board where every piece of evidence is rated against every hypothesis — and the structure of the matrix makes the gaps visible.
+Native iOS (SwiftUI + SwiftData) and Android (Kotlin + Jetpack Compose + Room) implementation of Heuer's Analysis of Competing Hypotheses, the technique CIA analysts use to keep wishful thinking out of conclusions. Reckon reframes ACH as an observatory: hypotheses are stars, evidence is observations, every cell in the matrix is a sightline you've pointed (or haven't).
+
+## The metaphor
+
+| | |
+|---|---|
+| **Hypotheses → stars** | Each candidate explanation. Brightness = stability under observation, not raw support. |
+| **Evidence → observations** | Each piece of evidence is one observation in your log. Credibility × relevance is the viewing condition (clear / hazy / cloudy). |
+| **Matrix cells → sightlines** | Each cell rates one observation against one star. Empty cells pulse softly — you haven't pointed the telescope there yet. |
+| **Bias chip → Pareidolia Alert** | When a column fills with same-direction ratings, the app warns you you're seeing a face in the stars. Find an observation that breaks the pattern. |
+| **Verdict → Constellation Confirmed** | The hypothesis whose star nothing has dimmed, surrounded by its confirming sightlines. |
 
 ## Why this matters
 
-Most decision tools let you write a long pros/cons list and call it analysis. That doesn't help — you can rationalize anything in prose.
+Most decision tools let you write a long pros-and-cons list and call it analysis. That doesn't help — you can rationalize anything in prose.
 
 Reckon's value is what it WON'T let you do:
 
-- **You can't avoid the comparison.** The matrix forces every piece of evidence against every hypothesis. Empty cells are visibly incomplete (dashed border, pulsing dot) — your eye is pulled to gaps you'd otherwise skip.
-- **You can't avoid your bias.** When a column has 3+ ratings all in the same direction, an inline warning appears at the column header — *"No disconfirming evidence yet."* The bias surfaces while you rate, not gated behind a "results" toggle.
-- **You see the verdict shifting in real time.** Each hypothesis column has a thin score bar that fills as you accumulate evidence. The leading hypothesis emerges visually, not just calculated at the end.
+- **You can't avoid the comparison.** The matrix forces every observation against every star. Empty cells are visibly unobserved (dashed sightline, pulsing dot) — your eye is pulled to gaps you'd otherwise skip.
+- **You can't avoid your bias.** When a column fills with same-direction ratings, an inline *Pareidolia Alert* appears at the column header. The bias surfaces while you rate, not gated behind a "results" toggle.
+- **You see steadiness, not popularity.** Each hypothesis column shows two signals: a red refutation badge (count of contradicting evidence) and a support bar. They're shown distinctly so you stop conflating "lots of support" with "actually right."
 
-The interesting layer is the decision model:
+## Refutation-first scoring
+
+Heuer's ACH technique: rank hypotheses by **fewest refutations**, not most support. The right answer is the star nothing has dimmed.
+
+This rewires what you hunt for. Most decision tools reward "find more evidence that supports your favorite" — which is exactly the cognitive habit ACH was designed to fight. Reckon ranks by:
+
+1. Lowest refutation count (the primary signal — a hypothesis that nothing has knocked down)
+2. Highest support count (tiebreaker)
+3. Highest weighted score (final tiebreaker)
+
+The "leading constellation" at the verdict is the steadiest one — not the brightest.
+
+## The decision model
 
 - hypotheses and evidence are first-class domain objects, not loose text blobs
 - per-cell ratings (Strong yes / Supports / Irrelevant / Contradicts / Strong no) preserve nuance instead of collapsing everything to yes/no
 - weighted evidence (credibility × relevance) so trustworthy + relevant data carries more weight
 - diagnostic evidence detection — which evidence actually distinguishes between hypotheses (vs. supports/contradicts everything equally)
-- bias warnings inline at the column level
+- inline Pareidolia Alerts at the column level — the app names the bias you're fighting
+- refutation-count + support-count tracked separately, so users see the two signals as distinct
 - structured exports to markdown for journaling and review
+
+## Onboarding
+
+First launch presents a 3-page tutorial in the same observatory aesthetic:
+1. **The premise** — why most decision tools fail (rationalization-friendly)
+2. **The metaphor** — stars, observations, sightlines
+3. **The cognitive twist** — refutation-first scoring + Pareidolia Alert
 
 ## Running Locally
 

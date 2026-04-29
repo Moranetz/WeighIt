@@ -37,52 +37,77 @@ struct MatrixGridView: View {
                         }
 
                     ForEach(board.sortedHypotheses) { hyp in
-                        let normScore = board.normalizedScore(for: hyp)
+                        let stability = board.stability(for: hyp)
+                        let refutations = board.refutationCount(for: hyp)
+                        let supports = board.supportCount(for: hyp)
                         let biasWarning = board.monotonicBias(for: hyp)
                         VStack(spacing: 4) {
                             HStack(spacing: 5) {
-                                Circle()
-                                    .fill(hyp.color)
-                                    .frame(width: 8, height: 8)
-                                    .shadow(color: hyp.color.opacity(0.5), radius: 3)
+                                // Star — sized & glow proportional to stability (steadiness under
+                                // observation), not raw support. A star nothing has dimmed shines
+                                // brightest. Refutation pressure dims the glow.
+                                Image(systemName: stability > 0.85 ? "star.fill" : "star")
+                                    .font(.system(size: 9, weight: .semibold))
+                                    .foregroundStyle(hyp.color)
+                                    .shadow(color: hyp.color.opacity(stability * 0.9), radius: stability * 5)
+                                    .opacity(0.4 + (stability * 0.6))
                                 Text(hypothesisTitle(for: hyp))
                                     .font(.system(size: 11, weight: .semibold))
                                     .foregroundStyle(Theme.textSecondary)
                                     .lineLimit(2)
                                     .multilineTextAlignment(.leading)
+                                Spacer(minLength: 0)
+                                // Refutation count badge — only visible when >0. Heuer's ACH ranks
+                                // hypotheses by fewest refutations: this is the number to minimize.
+                                if refutations > 0 {
+                                    Text("\(refutations)")
+                                        .font(.system(size: 9, weight: .heavy))
+                                        .fontDesign(.rounded)
+                                        .foregroundStyle(Color(hex: "F0EBE6"))
+                                        .frame(width: 14, height: 14)
+                                        .background(Color(hex: "D4746A"), in: Circle())
+                                        .overlay(Circle().strokeBorder(Color(hex: "D4746A").opacity(0.3), lineWidth: 2).blur(radius: 2))
+                                        .accessibilityLabel("\(refutations) refutations")
+                                }
                             }
                             .padding(.horizontal, 6)
 
-                            // Score bar — fills/shrinks as ratings accumulate. Reduces the urge
-                            // to skip to a separate "results" view by showing the column verdict
-                            // visually, in real time.
-                            ColumnScoreBar(score: normScore, color: hyp.color)
+                            // Support bar — uni-directional fill based on support count.
+                            // (Refutation pressure shows in the badge above, NOT here.)
+                            // This separates the two signals visually so users see them as
+                            // distinct, not as a single net "score."
+                            SupportBar(supports: supports, totalCells: board.activeHypotheses.isEmpty ? 1 : board.evidences.count, color: hyp.color)
                                 .frame(height: 3)
                                 .padding(.horizontal, 8)
 
-                            // Inline bias chip — appears AS users rate, not gated behind a toggle.
-                            // The whole point of the app is bias surfacing; it can't hide.
+                            // Pareidolia Alert — appears AS users rate. Names the bias they're
+                            // fighting (seeing patterns in stars that aren't actually constellations).
                             if let warning = biasWarning {
-                                Text(warning)
-                                    .font(.system(size: 8.5, weight: .semibold))
-                                    .foregroundStyle(Theme.warning)
-                                    .lineLimit(1)
-                                    .padding(.horizontal, 5)
-                                    .padding(.vertical, 1.5)
-                                    .background(Theme.warning.opacity(0.12), in: Capsule())
-                                    .overlay(Capsule().strokeBorder(Theme.warning.opacity(0.25), lineWidth: 0.5))
-                                    .padding(.horizontal, 4)
-                                    .transition(.scale.combined(with: .opacity))
+                                HStack(spacing: 3) {
+                                    Image(systemName: "exclamationmark.triangle.fill")
+                                        .font(.system(size: 7))
+                                    Text("Pareidolia: \(warning)")
+                                        .font(.system(size: 8.5, weight: .semibold))
+                                }
+                                .foregroundStyle(Theme.warning)
+                                .lineLimit(1)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 1.5)
+                                .background(Theme.warning.opacity(0.12), in: Capsule())
+                                .overlay(Capsule().strokeBorder(Theme.warning.opacity(0.25), lineWidth: 0.5))
+                                .padding(.horizontal, 4)
+                                .transition(.scale.combined(with: .opacity))
                             } else if hyp.isRuledOut {
                                 Text("RULED OUT")
                                     .font(.system(size: 8, weight: .bold))
                                     .foregroundStyle(Theme.negative)
                             }
                         }
-                        .frame(width: 110, height: 70)
+                        .frame(width: 110, height: 72)
                         .background(Color(hex: "161416"))
                         .opacity(hyp.isRuledOut ? 0.35 : 1)
-                        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: normScore)
+                        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: stability)
+                        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: refutations)
                         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: biasWarning)
                         .overlay(alignment: .trailing) {
                             Rectangle().fill(Theme.border).frame(width: 1)
@@ -173,36 +198,29 @@ struct MatrixGridView: View {
     }
 }
 
-// MARK: - Column Score Bar
-// Visualizes a hypothesis column's running score (-1...1) as a thin filling bar centered
-// on a midline. Pulls the eye to whichever hypothesis is gaining ground as the user rates.
-// Drives the "you couldn't avoid comparing" feel — the column is alive, not static.
+// MARK: - Support Bar
+// Uni-directional bar showing only support count for a hypothesis column. Refutation
+// pressure is shown SEPARATELY as a red badge — keeping the two signals visually distinct
+// is the whole point: users learn that "lots of support" and "no refutation" are different
+// things, and what really matters in ACH is the absence of refutation.
 
-struct ColumnScoreBar: View {
-    let score: Double?       // -1 ... 1, or nil for "no signal yet"
+struct SupportBar: View {
+    let supports: Int        // count of supporting cells
+    let totalCells: Int      // total possible (number of evidence rows)
     let color: Color
 
     var body: some View {
         GeometryReader { geo in
-            ZStack {
+            ZStack(alignment: .leading) {
                 Capsule()
                     .fill(Theme.border.opacity(0.6))
-                if let s = score, abs(s) > 0.01 {
-                    let halfWidth = geo.size.width / 2
-                    let fillWidth = halfWidth * abs(s)
-                    let fillColor: Color = s > 0
-                        ? Color(hex: "7EC49B")            // positive score = green
-                        : Color(hex: "D4746A")            // negative score = red
+                if supports > 0 && totalCells > 0 {
+                    let pct = min(1.0, Double(supports) / Double(totalCells))
                     Capsule()
-                        .fill(fillColor)
-                        .frame(width: fillWidth)
-                        .offset(x: s > 0 ? fillWidth / 2 : -fillWidth / 2)
-                        .shadow(color: fillColor.opacity(0.4), radius: 3)
+                        .fill(color)
+                        .frame(width: geo.size.width * CGFloat(pct))
+                        .shadow(color: color.opacity(0.4), radius: 3)
                 }
-                // midline tick — anchor for the bar
-                Rectangle()
-                    .fill(color.opacity(score == nil ? 0.5 : 0.7))
-                    .frame(width: 1.5, height: 5)
             }
         }
     }

@@ -273,10 +273,69 @@ final class Board {
         return Int(total)
     }
 
-    var rankedHypotheses: [(hypothesis: Hypothesis, score: Int)] {
+    /// Count of refuting cells for a hypothesis — number of evidence rows rated as
+    /// `.contradicts` or `.stronglyContradicts`. Heuer's ACH technique ranks hypotheses
+    /// by FEWEST refutations (not most support), because confirming evidence rarely
+    /// distinguishes between competing explanations — refuting evidence does.
+    func refutationCount(for hypothesis: Hypothesis) -> Int {
+        guard !hypothesis.isRuledOut else { return 0 }
+        return evidences.compactMap { ev in
+            rating(evidenceID: ev.id, hypothesisID: hypothesis.id)
+        }.filter { $0 == .contradicts || $0 == .stronglyContradicts }.count
+    }
+
+    /// Count of supporting cells for a hypothesis. Used as a tiebreaker after
+    /// refutation count (the primary ACH ranking signal).
+    func supportCount(for hypothesis: Hypothesis) -> Int {
+        guard !hypothesis.isRuledOut else { return 0 }
+        return evidences.compactMap { ev in
+            rating(evidenceID: ev.id, hypothesisID: hypothesis.id)
+        }.filter { $0 == .supports || $0 == .stronglySupports }.count
+    }
+
+    /// Weighted refutation pressure — refuting cells × evidence credibility × relevance.
+    /// Stronger and higher-weighted refutations contribute more.
+    func weightedRefutation(for hypothesis: Hypothesis) -> Double {
+        guard !hypothesis.isRuledOut else { return 0 }
+        var total = 0.0
+        for ev in evidences {
+            guard let r = rating(evidenceID: ev.id, hypothesisID: hypothesis.id) else { continue }
+            if r == .contradicts || r == .stronglyContradicts {
+                let weight = ev.credWeight.multiplier * ev.relWeight.multiplier
+                total += Double(abs(r.value)) * weight
+            }
+        }
+        return total
+    }
+
+    /// Astronomical metaphor: a star's "stability" — its steadiness under observation.
+    /// Lower refutation pressure = more stable. Returned as 0...1 where 1 is perfectly
+    /// stable (nothing has dimmed it). Used to drive star-brightness visualization.
+    func stability(for hypothesis: Hypothesis) -> Double {
+        guard !hypothesis.isRuledOut else { return 0 }
+        let weighted = weightedRefutation(for: hypothesis)
+        // Each cell can contribute up to 2 (strong contradicts) × 9 (high×high) = 18 to refutation.
+        // Use evidence count to scale max, falling back to 1 to avoid div by zero.
+        let cellCount = max(1, evidences.count)
+        let maxPossibleRefutation = Double(cellCount) * 18.0
+        let normalized = weighted / maxPossibleRefutation
+        return max(0, 1.0 - normalized)
+    }
+
+    /// Hypotheses ranked by Heuer's ACH technique: fewest refutations first, with a
+    /// tiebreaker on most support. The "leading" hypothesis is the steadiest star —
+    /// the one that no observation has knocked down.
+    var rankedHypotheses: [(hypothesis: Hypothesis, score: Int, refutations: Int, supports: Int)] {
         activeHypotheses
-            .compactMap { h in score(for: h).map { (h, $0) } }
-            .sorted { $0.score > $1.score }
+            .compactMap { h in
+                guard let s = score(for: h) else { return nil }
+                return (h, s, refutationCount(for: h), supportCount(for: h))
+            }
+            .sorted { lhs, rhs in
+                if lhs.refutations != rhs.refutations { return lhs.refutations < rhs.refutations }
+                if lhs.supports != rhs.supports { return lhs.supports > rhs.supports }
+                return lhs.score > rhs.score
+            }
     }
 
     var maxAbsScore: Int {
