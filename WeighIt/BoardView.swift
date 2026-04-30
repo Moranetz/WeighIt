@@ -371,10 +371,57 @@ struct BoardView: View {
             if !board.conclusion.isEmpty {
                 calibrationCard
                     .transition(.opacity.combined(with: .move(edge: .bottom)))
+                preMortemCard
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
         }
         .cardStyle()
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: board.conclusion.isEmpty)
+    }
+
+    /// Pre-mortem prompt — Klein/Murphyjitsu. After the user writes a verdict and
+    /// sets confidence, force one more falsificationist beat: imagine the verdict
+    /// turned out wrong in a year. What happened? Catches wishful thinking that
+    /// even refutation-first scoring misses, because it asks the user to actively
+    /// imagine being wrong AFTER they've reached their conclusion.
+    private var preMortemCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 6) {
+                Image(systemName: "exclamationmark.bubble")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(Theme.warning)
+                Text("PRE-MORTEM")
+                    .font(.system(size: 9, weight: .heavy))
+                    .tracking(1.4)
+                    .foregroundStyle(Theme.warning.opacity(0.85))
+            }
+            Text("Imagine you're wrong about this in a year. What happened?")
+                .font(.caption)
+                .foregroundStyle(Theme.textSecondary)
+            TextField("Concretely — what got you here?", text: $board.preMortem, axis: .vertical)
+                .font(.system(.body, design: .rounded))
+                .lineLimit(2...5)
+                .foregroundStyle(Theme.textPrimary)
+                .padding(12)
+                .background(Color.white.opacity(0.025), in: RoundedRectangle(cornerRadius: 12))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .strokeBorder(Theme.warning.opacity(0.20), lineWidth: 1)
+                )
+            Text("Imagining concrete failure modes after a conclusion catches wishful thinking that even refutation-first scoring misses.")
+                .font(.system(size: 10))
+                .italic()
+                .foregroundStyle(Theme.textDim)
+        }
+        .padding(14)
+        .background {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color.white.opacity(0.025))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(Theme.warning.opacity(0.18), lineWidth: 1)
+                )
+        }
     }
 
     private var calibrationCard: some View {

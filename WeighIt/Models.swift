@@ -179,6 +179,13 @@ final class Hypothesis {
     /// that refutation is conjunctive, not crisp.
     var auxiliaryAssumptions: String
 
+    /// Steel-manned case for this hypothesis: the strongest version of the argument
+    /// FOR it. Captured before "dimming" (ruling out) so users have to engage with
+    /// the strongest version of a disfavored position before discarding it. Fixes
+    /// the most common ACH failure: rating a disfavored hypothesis dismissively,
+    /// then ruling it out — never actually wrestling with its strongest form.
+    var steelmanCase: String
+
     init(name: String = "", colorHex: String = "EF8B6E", sortOrder: Int = 0, falsifier: String = "") {
         self.id = UUID()
         self.name = name
@@ -188,6 +195,7 @@ final class Hypothesis {
         self.falsifier = falsifier
         self.priorProbability = 0.0
         self.auxiliaryAssumptions = ""
+        self.steelmanCase = ""
     }
 
     var color: Color { Color(hex: colorHex) }
@@ -263,6 +271,12 @@ final class Board {
     var isTemplate: Bool
     var templateName: String
 
+    /// Pre-mortem: after writing a conclusion, the user imagines the conclusion was
+    /// wrong in a year and writes what plausibly went wrong. Forces a final
+    /// falsificationist beat AFTER the verdict — catches the wishful thinking that
+    /// even refutation-first scoring misses.
+    var preMortem: String
+
     @Relationship(deleteRule: .cascade) var hypotheses: [Hypothesis]
     @Relationship(deleteRule: .cascade) var evidences: [Evidence]
     @Relationship(deleteRule: .cascade) var cellRatings: [CellRating]
@@ -280,6 +294,7 @@ final class Board {
         self.outcomeReviewedAt = nil
         self.isTemplate = false
         self.templateName = ""
+        self.preMortem = ""
         self.hypotheses = []
         self.evidences = []
         self.cellRatings = []

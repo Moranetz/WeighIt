@@ -11,6 +11,7 @@ struct ContentView: View {
     @State private var showOnboarding = false
     @State private var showExamplePicker = false
     @State private var showAISeed = false
+    @State private var showCalibration = false
 
     // Working boards (exclude templates from the main list / picker logic)
     private var boards: [Board] { allBoards.filter { !$0.isTemplate } }
@@ -81,6 +82,9 @@ struct ContentView: View {
                             Divider()
                             Toggle(isOn: $strictBayesMode) {
                                 Label("Strict Bayes mode", systemImage: "function")
+                            }
+                            Button("Calibration history", systemImage: "chart.line.uptrend.xyaxis") {
+                                showCalibration = true
                             }
                             Divider()
                             if let board = activeBoard {
@@ -168,6 +172,14 @@ struct ContentView: View {
                 showAISeed = false
             } onCancel: {
                 showAISeed = false
+            }
+            .presentationDetents([.large])
+            .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $showCalibration) {
+            CalibrationView(boards: boards) { board in
+                activeBoard = board
+                showCalibration = false
             }
             .presentationDetents([.large])
             .presentationDragIndicator(.visible)
@@ -1185,5 +1197,303 @@ extension Rating {
         case "stronglyContradicts": return .stronglyContradicts
         default: return nil
         }
+    }
+}
+
+// MARK: - Calibration View
+// Aggregates across all boards where the user has set a confidence and reviewed
+// outcome. Surfaces:
+//   - Brier-like score (mean squared error of confidence vs outcome accuracy)
+//   - Calibration buckets (confidence range vs mean accuracy in that bucket)
+//   - Outstanding check-ins (check-in date passed, no review yet)
+// Turns Reckon from "individual decision tool" into "thinking gym" — making your
+// next decision better by surfacing patterns in your past ones.
+
+struct CalibrationView: View {
+    let boards: [Board]
+    let onOpenBoard: (Board) -> Void
+
+    private var reviewed: [Board] {
+        boards.filter { $0.outcomeAccuracy != nil && $0.confidence != nil }
+            .sorted { ($0.outcomeReviewedAt ?? .distantPast) > ($1.outcomeReviewedAt ?? .distantPast) }
+    }
+
+    private var pending: [Board] {
+        boards.filter {
+            $0.checkInDate != nil &&
+            $0.outcomeReviewedAt == nil &&
+            ($0.checkInDate ?? .distantFuture) <= Date()
+        }
+    }
+
+    private var upcoming: [Board] {
+        boards.filter {
+            $0.checkInDate != nil &&
+            $0.outcomeReviewedAt == nil &&
+            ($0.checkInDate ?? .distantPast) > Date()
+        }
+    }
+
+    private var brierLike: Double? {
+        guard !reviewed.isEmpty else { return nil }
+        let errors = reviewed.map { b -> Double in
+            let pred = Double(b.confidence ?? 0) / 100.0
+            let actual = Double(b.outcomeAccuracy ?? 0) / 100.0
+            return (pred - actual) * (pred - actual)
+        }
+        return errors.reduce(0, +) / Double(errors.count)
+    }
+
+    /// Bucket reviewed boards by stated confidence (0-20%, 20-40%, ...) and compute
+    /// the mean outcome accuracy in each bucket. Perfect calibration: bucket centroids
+    /// fall on the diagonal y = x.
+    private var calibrationBuckets: [(range: ClosedRange<Int>, predicted: Double, actual: Double, count: Int)] {
+        let buckets: [ClosedRange<Int>] = [0...20, 21...40, 41...60, 61...80, 81...100]
+        return buckets.compactMap { range in
+            let inBucket = reviewed.filter { range.contains($0.confidence ?? -1) }
+            guard !inBucket.isEmpty else { return nil }
+            let pred = inBucket.compactMap { $0.confidence }.map(Double.init).reduce(0, +) / Double(inBucket.count)
+            let actual = inBucket.compactMap { $0.outcomeAccuracy }.map(Double.init).reduce(0, +) / Double(inBucket.count)
+            return (range, pred, actual, inBucket.count)
+        }
+    }
+
+    var body: some View {
+        ZStack {
+            Color(hex: "0A0A12").ignoresSafeArea()
+            StarfieldView(starCount: 60, seed: 73)
+                .ignoresSafeArea()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 22) {
+                    header
+
+                    if reviewed.isEmpty && pending.isEmpty && upcoming.isEmpty {
+                        emptyState
+                    } else {
+                        if !pending.isEmpty {
+                            pendingCard
+                        }
+                        if !reviewed.isEmpty {
+                            scoreCard
+                            calibrationCurveCard
+                        }
+                        if !upcoming.isEmpty {
+                            upcomingCard
+                        }
+                    }
+                }
+                .padding(20)
+            }
+        }
+        .preferredColorScheme(.dark)
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                Image(systemName: "chart.line.uptrend.xyaxis")
+                    .font(.system(size: 22))
+                    .foregroundStyle(Theme.accent)
+                Text("Calibration history")
+                    .font(.system(.title2, design: .rounded))
+                    .fontWeight(.heavy)
+                    .foregroundStyle(Theme.textPrimary)
+            }
+            Text("Are you actually right when you say you're 80% sure? Reckon tracks confidence vs outcome across every board you review.")
+                .font(.subheadline)
+                .foregroundStyle(Theme.textDim)
+                .lineSpacing(2)
+        }
+    }
+
+    private var emptyState: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "telescope")
+                .font(.system(size: 44))
+                .foregroundStyle(Theme.accent)
+                .padding(.top, 60)
+            Text("Nothing tracked yet")
+                .font(.system(.title3, design: .rounded))
+                .fontWeight(.heavy)
+                .foregroundStyle(Theme.textPrimary)
+            Text("Finalize a board, set a confidence and check-in date, then return when the date arrives. Your calibration curve appears here once you've reviewed a few decisions.")
+                .font(.subheadline)
+                .foregroundStyle(Theme.textDim)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 24)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.bottom, 60)
+    }
+
+    private var scoreCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("BRIER-LIKE SCORE")
+                .font(.system(size: 9, weight: .heavy))
+                .tracking(1.4)
+                .foregroundStyle(Theme.accent.opacity(0.85))
+
+            HStack(alignment: .lastTextBaseline, spacing: 8) {
+                Text(brierLike.map { String(format: "%.3f", $0) } ?? "—")
+                    .font(.system(size: 38, weight: .heavy, design: .rounded))
+                    .foregroundStyle(Theme.textPrimary)
+                Text("(0 = perfect)")
+                    .font(.caption)
+                    .foregroundStyle(Theme.textDim)
+            }
+
+            Text("\(reviewed.count) decision\(reviewed.count == 1 ? "" : "s") reviewed")
+                .font(.caption)
+                .foregroundStyle(Theme.textSecondary)
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(.ultraThinMaterial.opacity(0.55))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .strokeBorder(Theme.accent.opacity(0.22), lineWidth: 1)
+                )
+        }
+    }
+
+    private var calibrationCurveCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("CALIBRATION CURVE")
+                .font(.system(size: 9, weight: .heavy))
+                .tracking(1.4)
+                .foregroundStyle(Theme.accent.opacity(0.85))
+
+            ForEach(calibrationBuckets, id: \.range.lowerBound) { bucket in
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text("\(bucket.range.lowerBound)–\(bucket.range.upperBound)% confident")
+                            .font(.caption)
+                            .foregroundStyle(Theme.textSecondary)
+                        Spacer()
+                        Text("→ actually \(Int(bucket.actual))%")
+                            .font(.system(.caption, design: .rounded))
+                            .fontWeight(.bold)
+                            .foregroundStyle(
+                                abs(bucket.predicted - bucket.actual) < 10 ? Theme.positive : Theme.warning
+                            )
+                        Text("(n=\(bucket.count))")
+                            .font(.caption2)
+                            .foregroundStyle(Theme.textDim)
+                    }
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            // Predicted (confidence) bar — light track
+                            Capsule()
+                                .fill(Theme.accent.opacity(0.20))
+                                .frame(width: geo.size.width * (bucket.predicted / 100))
+                                .frame(height: 4)
+                            // Actual outcome bar — solid accent
+                            Capsule()
+                                .fill(Theme.accent)
+                                .frame(width: geo.size.width * (bucket.actual / 100))
+                                .frame(height: 4)
+                                .opacity(0.85)
+                        }
+                    }
+                    .frame(height: 4)
+                }
+            }
+
+            Text("Solid bar = how often outcomes actually matched your confidence. The closer it tracks the lighter bar, the better your calibration.")
+                .font(.system(size: 10))
+                .italic()
+                .foregroundStyle(Theme.textDim)
+                .padding(.top, 4)
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(.ultraThinMaterial.opacity(0.55))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .strokeBorder(Theme.border, lineWidth: 1)
+                )
+        }
+    }
+
+    private var pendingCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 6) {
+                Image(systemName: "bell.badge")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Theme.warning)
+                Text("READY TO REVIEW")
+                    .font(.system(size: 9, weight: .heavy))
+                    .tracking(1.4)
+                    .foregroundStyle(Theme.warning.opacity(0.85))
+            }
+            ForEach(pending) { board in
+                Button { onOpenBoard(board) } label: {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(board.displayName)
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(Theme.textPrimary)
+                                .lineLimit(1)
+                            if let date = board.checkInDate {
+                                Text("Due \(date.formatted(.relative(presentation: .named)))")
+                                    .font(.caption)
+                                    .foregroundStyle(Theme.warning)
+                            }
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundStyle(Theme.textDim)
+                    }
+                    .padding(12)
+                    .background(Theme.warning.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .strokeBorder(Theme.warning.opacity(0.18), lineWidth: 1)
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(.ultraThinMaterial.opacity(0.55))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .strokeBorder(Theme.warning.opacity(0.22), lineWidth: 1)
+                )
+        }
+    }
+
+    private var upcomingCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("UPCOMING CHECK-INS")
+                .font(.system(size: 9, weight: .heavy))
+                .tracking(1.4)
+                .foregroundStyle(Theme.textDim)
+            ForEach(upcoming) { board in
+                HStack {
+                    Text(board.displayName)
+                        .font(.caption)
+                        .foregroundStyle(Theme.textSecondary)
+                        .lineLimit(1)
+                    Spacer()
+                    if let date = board.checkInDate {
+                        Text(date.formatted(.relative(presentation: .named)))
+                            .font(.caption2)
+                            .foregroundStyle(Theme.textDim)
+                    }
+                }
+            }
+        }
+        .padding(14)
     }
 }

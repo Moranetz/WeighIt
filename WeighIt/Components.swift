@@ -10,6 +10,7 @@ struct HypothesisRow: View {
     private let haptic = UIImpactFeedbackGenerator(style: .medium)
     @State private var starPulse = false
     @State private var falsifierExpanded = false
+    @State private var showSteelmanSheet = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -22,6 +23,21 @@ struct HypothesisRow: View {
             falsifierField
                 .transition(.opacity.combined(with: .move(edge: .top)))
         }
+        }
+        .sheet(isPresented: $showSteelmanSheet) {
+            SteelmanSheet(
+                hypothesis: hypothesis,
+                onSaveAndDim: {
+                    showSteelmanSheet = false
+                    haptic.impactOccurred()
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+                        hypothesis.isRuledOut = true
+                    }
+                },
+                onCancel: { showSteelmanSheet = false }
+            )
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.visible)
         }
     }
 
@@ -75,9 +91,16 @@ struct HypothesisRow: View {
             }
 
             Button {
-                haptic.impactOccurred()
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
-                    hypothesis.isRuledOut.toggle()
+                if hypothesis.isRuledOut {
+                    // Re-light is unconditional — no friction
+                    haptic.impactOccurred()
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+                        hypothesis.isRuledOut = false
+                    }
+                } else {
+                    // Dimming requires a steelman first — forces engagement with the
+                    // strongest version of a disfavored hypothesis before discarding it.
+                    showSteelmanSheet = true
                 }
             } label: {
                 Image(systemName: hypothesis.isRuledOut ? "sparkles" : "moon.stars")
@@ -382,5 +405,97 @@ struct NotePanel: View {
                 .strokeBorder(Theme.accent.opacity(0.15), lineWidth: 1)
         )
         .onAppear { draft = note }
+    }
+}
+
+// MARK: - Steelman Sheet
+// Presented when the user taps "dim" on a hypothesis. Requires writing the
+// strongest version of the argument FOR the hypothesis before ruling it out.
+// Fixes the most common ACH failure: rating a disfavored hypothesis dismissively,
+// then ruling it out — never actually wrestling with its strongest form.
+
+struct SteelmanSheet: View {
+    @Bindable var hypothesis: Hypothesis
+    let onSaveAndDim: () -> Void
+    let onCancel: () -> Void
+
+    var body: some View {
+        ZStack {
+            Color(hex: "0A0A12").ignoresSafeArea()
+            RadialGradient(colors: [Color(hex: "1A1426").opacity(0.55), .clear],
+                           center: .topLeading, startRadius: 0, endRadius: 500)
+                .ignoresSafeArea()
+            StarfieldView(starCount: 70, seed: 31)
+                .ignoresSafeArea()
+
+            VStack(alignment: .leading, spacing: 18) {
+                HStack(spacing: 10) {
+                    Image(systemName: "shield.lefthalf.filled")
+                        .font(.system(size: 24))
+                        .foregroundStyle(Theme.accent)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Before you dim this star")
+                            .font(.system(.title3, design: .rounded))
+                            .fontWeight(.heavy)
+                            .foregroundStyle(Theme.textPrimary)
+                        Text(hypothesis.name.isEmpty ? "(unnamed star)" : hypothesis.name)
+                            .font(.subheadline)
+                            .foregroundStyle(Theme.textSecondary)
+                            .lineLimit(2)
+                    }
+                    Spacer()
+                }
+                .padding(.top, 12)
+
+                Text("What's the STRONGEST case you can make for this hypothesis? Steel-manning a disfavored position before ruling it out is what separates analysis from rationalization.")
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.textDim)
+                    .lineSpacing(2)
+
+                TextEditor(text: $hypothesis.steelmanCase)
+                    .font(.system(.body, design: .rounded))
+                    .scrollContentBackground(.hidden)
+                    .foregroundStyle(Theme.textPrimary)
+                    .padding(12)
+                    .frame(minHeight: 120, maxHeight: 200)
+                    .background(Color.white.opacity(0.03), in: RoundedRectangle(cornerRadius: 14))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .strokeBorder(Theme.accent.opacity(0.30), lineWidth: 1)
+                    )
+
+                HStack(spacing: 10) {
+                    Button { onCancel() } label: {
+                        Text("Keep it lit")
+                            .font(.system(.subheadline, design: .rounded))
+                            .fontWeight(.semibold)
+                            .foregroundStyle(Theme.textSecondary)
+                            .padding(.horizontal, 18)
+                            .padding(.vertical, 12)
+                            .frame(maxWidth: .infinity)
+                            .background(Color.white.opacity(0.03), in: Capsule())
+                            .overlay(Capsule().strokeBorder(Theme.border, lineWidth: 1))
+                    }
+
+                    Button { onSaveAndDim() } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "moon.stars")
+                                .font(.system(size: 11, weight: .bold))
+                            Text("Save & dim")
+                                .font(.system(.subheadline, design: .rounded))
+                                .fontWeight(.bold)
+                        }
+                        .foregroundStyle(Color(hex: "0A0A12"))
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 12)
+                        .frame(maxWidth: .infinity)
+                        .background(Theme.accentGradient, in: Capsule())
+                    }
+                }
+                .padding(.bottom, 24)
+            }
+            .padding(.horizontal, 22)
+        }
+        .preferredColorScheme(.dark)
     }
 }
