@@ -42,24 +42,12 @@ struct HypothesisRow: View {
     }
 
     private var mainRow: some View {
-        HStack(spacing: 14) {
-            // Color identity with a soft glow halo — each hypothesis is
-            // visibly anchored by its own pocket of light. The halo earns
-            // its place because it's the one chromatic moment per row.
-            ZStack {
-                Circle()
-                    .fill(hypothesis.color.opacity(hypothesis.isRuledOut ? 0 : 0.35))
-                    .frame(width: 28, height: 28)
-                    .blur(radius: 10)
-                Circle()
-                    .fill(hypothesis.color.opacity(hypothesis.isRuledOut ? 0.25 : 1))
-                    .frame(width: 10, height: 10)
-                    .shadow(
-                        color: hypothesis.isRuledOut ? .clear : hypothesis.color.opacity(0.7),
-                        radius: 4
-                    )
-            }
-            .frame(width: 24)
+        HStack(spacing: 12) {
+            // Quiet color identity — solid 10pt dot, no halo, no bloom.
+            // Color is information (which hypothesis), not decoration.
+            Circle()
+                .fill(hypothesis.color.opacity(hypothesis.isRuledOut ? 0.35 : 1))
+                .frame(width: 10, height: 10)
 
             if hypothesis.isRuledOut {
                 Text(hypothesis.name.isEmpty ? (plainEnglishMode ? "Hypothesis" : "Star") : hypothesis.name)
@@ -132,36 +120,15 @@ struct HypothesisRow: View {
                 }
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 13)
-        .background {
-            ZStack(alignment: .leading) {
-                // Solid surface with a faint hypothesis-color wash inside —
-                // each row reads as belonging to its own idea, not a generic
-                // input cell.
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(Theme.surface)
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(LinearGradient(
-                        colors: [
-                            hypothesis.color.opacity(hypothesis.isRuledOut ? 0 : 0.10),
-                            .clear,
-                        ],
-                        startPoint: .leading,
-                        endPoint: .center
-                    ))
-                // Saturated identity ribbon at the leading edge.
-                HStack(spacing: 0) {
-                    Rectangle()
-                        .fill(hypothesis.color.opacity(hypothesis.isRuledOut ? 0.25 : 1))
-                        .frame(width: 4)
-                    Spacer()
-                }
-                .clipShape(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                )
-            }
-        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        // Solid surface only. No leading-edge ribbon (impeccable.style #5,
+        // "the signature AI tell"), no chromatic gradient leak. The 10pt
+        // color dot carries identity by itself.
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Theme.surface)
+        )
         .opacity(hypothesis.isRuledOut ? 0.55 : 1)
     }
 

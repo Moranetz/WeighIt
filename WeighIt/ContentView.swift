@@ -24,31 +24,16 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // Rich, deep ground with confident atmospheric depth. The
-                // washes go in as a layered background — indigo bloom up
-                // high, deeper plum at center, coral warmth bottom-leading —
-                // so the surface itself reads as having atmosphere rather
-                // than being a flat dark plane.
+                // Calm warm-dark ground with a single, restrained warm wash
+                // up top. No purple/indigo overlays (impeccable.style #13:
+                // "AI color palette") and no atmospheric layer-stack
+                // (the lava-lamp / vibecoded background tell).
                 Theme.bg.ignoresSafeArea()
                 RadialGradient(
-                    colors: [Color(hex: "5B4FCF").opacity(0.32), .clear],
-                    center: .topLeading,
+                    colors: [Theme.accent.opacity(0.10), .clear],
+                    center: .top,
                     startRadius: 0,
-                    endRadius: 700
-                )
-                .ignoresSafeArea()
-                RadialGradient(
-                    colors: [Color(hex: "FF6B47").opacity(0.20), .clear],
-                    center: UnitPoint(x: 0.85, y: 0.20),
-                    startRadius: 0,
-                    endRadius: 520
-                )
-                .ignoresSafeArea()
-                RadialGradient(
-                    colors: [Color(hex: "1A1030").opacity(0.6), .clear],
-                    center: .bottom,
-                    startRadius: 0,
-                    endRadius: 700
+                    endRadius: 480
                 )
                 .ignoresSafeArea()
 

@@ -17,11 +17,11 @@ import SwiftUI
 //      pattern-recognition anchor.
 
 enum Theme {
-    // Ground — deep, rich indigo-near-black. Darker than chocolate-warm but
-    // with enough hue saturation that it reads as material, not void.
-    // The slight indigo tint is what makes it "rich" instead of just dark.
-    static let bg = Color(hex: "0A0612")
-    static let bgElevated = Color(hex: "150C1A")
+    // Ground — deep warm-tinted dark. Warm cast (slight red bias) keeps it
+    // reading as material, not void, and intentionally avoids the
+    // purple/indigo-on-dark "AI color palette" tell (impeccable.style #13).
+    static let bg = Color(hex: "0F0A08")
+    static let bgElevated = Color(hex: "1A120E")
 
     // Card surfaces — bumped for stronger contrast and presence on the
     // darker ground. Cards now read as clearly lifted, not barely-there.
@@ -69,11 +69,10 @@ struct CardStyle: ViewModifier {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .strokeBorder(Theme.hairline, lineWidth: 0.5)
             )
-            // Two-layer shadow: deep ambient for elevation + faint indigo
-            // bloom so the card feels "lifted into a richer atmosphere"
-            // instead of pasted onto a flat dark.
-            .shadow(color: Color(hex: "818CF8").opacity(0.10), radius: 24, y: 0)
-            .shadow(color: Color.black.opacity(0.45), radius: 14, y: 6)
+            // One ambient shadow — neutral near-black, no chromatic bloom.
+            // Per impeccable.style #14, colored box-shadow glows on dark are
+            // the signature cyberpunk/AI-slop tell.
+            .shadow(color: Color.black.opacity(0.40), radius: 12, y: 4)
     }
 }
 
@@ -83,14 +82,16 @@ extension View {
     }
 }
 
-// MARK: - Primary CTA Glow
-// Soft accent-color bloom under any solid-accent button. Buttons feel like
-// they're floating on a pocket of light rather than pasted on the surface.
-// Apply as `.primaryCTAGlow()` after the `.background(Theme.accent, ...)` call.
+// MARK: - Primary CTA Glow (no-op)
+// Kept as a no-op stub so existing call sites still compile. The actual
+// glow has been removed — colored box-shadow glows on dark surfaces are
+// listed by impeccable.style as anti-pattern #14 ("dark mode with glowing
+// accents", the cyberpunk AI tell). Hierarchy comes from solid color +
+// type weight, not from radiating light.
 
 extension View {
     func primaryCTAGlow(strength: Double = 0.40, radius: CGFloat = 14) -> some View {
-        self.shadow(color: Theme.accent.opacity(strength), radius: radius, y: 2)
+        self
     }
 }
 
@@ -129,16 +130,9 @@ struct CelestialFieldStyle: ViewModifier {
             .overlay(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .strokeBorder(
-                        isFocused ? Theme.accent.opacity(0.85) : Theme.hairline,
+                        isFocused ? Theme.accent : Theme.hairline,
                         lineWidth: isFocused ? 1.5 : 0.5
                     )
-            )
-            // Focused inputs glow with the brand color — typing the question
-            // becomes a moment, not a chore.
-            .shadow(
-                color: isFocused ? Theme.accent.opacity(0.40) : .clear,
-                radius: isFocused ? 16 : 0,
-                y: 0
             )
             .animation(.easeOut(duration: 0.18), value: isFocused)
     }
