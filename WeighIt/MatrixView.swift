@@ -7,6 +7,7 @@ struct MatrixGridView: View {
     @Binding var selectedCell: CellKey?
     @Binding var ratingPopoverCell: CellKey?
     let onRate: (UUID, UUID, Rating?) -> Void
+    @AppStorage("strictBayesMode") private var strictBayesMode = false
 
     private func hypothesisTitle(for hypothesis: Hypothesis) -> String {
         guard !hypothesis.name.isEmpty else {
@@ -41,6 +42,7 @@ struct MatrixGridView: View {
                         let refutations = board.refutationCount(for: hyp)
                         let supports = board.supportCount(for: hyp)
                         let biasWarning = board.monotonicBias(for: hyp)
+                        let posterior = board.bayesianPosterior(for: hyp)
                         VStack(spacing: 4) {
                             HStack(spacing: 5) {
                                 // Star — sized & glow proportional to stability (steadiness under
@@ -57,9 +59,19 @@ struct MatrixGridView: View {
                                     .lineLimit(2)
                                     .multilineTextAlignment(.leading)
                                 Spacer(minLength: 0)
-                                // Refutation count badge — only visible when >0. Heuer's ACH ranks
-                                // hypotheses by fewest refutations: this is the number to minimize.
-                                if refutations > 0 {
+                                // In strict Bayes mode, badge shows posterior probability.
+                                // In refutation-first mode, badge shows refutation count.
+                                if strictBayesMode {
+                                    Text("\(Int(posterior * 100))%")
+                                        .font(.system(size: 9, weight: .heavy))
+                                        .fontDesign(.rounded)
+                                        .foregroundStyle(hyp.color)
+                                        .padding(.horizontal, 4)
+                                        .padding(.vertical, 1.5)
+                                        .background(hyp.color.opacity(0.18), in: Capsule())
+                                        .overlay(Capsule().strokeBorder(hyp.color.opacity(0.4), lineWidth: 0.75))
+                                        .accessibilityLabel("Bayesian posterior \(Int(posterior * 100)) percent")
+                                } else if refutations > 0 {
                                     Text("\(refutations)")
                                         .font(.system(size: 9, weight: .heavy))
                                         .fontDesign(.rounded)
@@ -72,13 +84,17 @@ struct MatrixGridView: View {
                             }
                             .padding(.horizontal, 6)
 
-                            // Support bar — uni-directional fill based on support count.
-                            // (Refutation pressure shows in the badge above, NOT here.)
-                            // This separates the two signals visually so users see them as
-                            // distinct, not as a single net "score."
-                            SupportBar(supports: supports, totalCells: board.activeHypotheses.isEmpty ? 1 : board.evidences.count, color: hyp.color)
-                                .frame(height: 3)
-                                .padding(.horizontal, 8)
+                            // In Bayes mode, the bar visualizes posterior as a probability fill.
+                            // In refutation-first, it shows support count.
+                            if strictBayesMode {
+                                PosteriorBar(probability: posterior, color: hyp.color)
+                                    .frame(height: 3)
+                                    .padding(.horizontal, 8)
+                            } else {
+                                SupportBar(supports: supports, totalCells: board.activeHypotheses.isEmpty ? 1 : board.evidences.count, color: hyp.color)
+                                    .frame(height: 3)
+                                    .padding(.horizontal, 8)
+                            }
 
                             // Pareidolia Alert — appears AS users rate. Names the bias they're
                             // fighting (seeing patterns in stars that aren't actually constellations).
@@ -196,6 +212,33 @@ struct MatrixGridView: View {
                 .strokeBorder(Theme.border, lineWidth: 1)
         )
         .background(Color.black.opacity(0.15), in: RoundedRectangle(cornerRadius: 14))
+    }
+}
+
+// MARK: - Posterior Bar
+// Strict-Bayes-mode column header bar. Visualizes posterior probability (0...1) as
+// a left-anchored fill — full width = 100% certainty for this hypothesis. Differs
+// from SupportBar in that it represents an actual probability, not just a count.
+
+struct PosteriorBar: View {
+    let probability: Double
+    let color: Color
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(Theme.border.opacity(0.6))
+                Capsule()
+                    .fill(LinearGradient(
+                        colors: [color.opacity(0.6), color],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    ))
+                    .frame(width: max(2, geo.size.width * CGFloat(probability)))
+                    .shadow(color: color.opacity(0.5), radius: 3)
+            }
+        }
     }
 }
 

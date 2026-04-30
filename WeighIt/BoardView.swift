@@ -92,12 +92,16 @@ struct BoardView: View {
 
     // MARK: - Hypotheses
 
+    @AppStorage("strictBayesMode") private var strictBayesMode = false
+
     private var hypothesesSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     SectionLabel(text: "Stars to test", icon: "star")
-                    Text("Each candidate explanation. Ranked by what hasn't been knocked down.")
+                    Text(strictBayesMode
+                         ? "Set a prior, then watch the posterior update with each observation."
+                         : "Each candidate explanation. Ranked by what hasn't been knocked down.")
                         .font(.caption)
                         .foregroundStyle(Theme.textDim)
                         .fixedSize(horizontal: false, vertical: true)
@@ -124,10 +128,60 @@ struct BoardView: View {
                 HypothesisRow(
                     hypothesis: hyp,
                     canDelete: board.hypotheses.count > 2,
+                    showPriorSlider: strictBayesMode,
                     onDelete: {
                         board.cellRatings.removeAll { $0.hypothesisID == hyp.id }
                         board.hypotheses.removeAll { $0.id == hyp.id }
                     }
+                )
+            }
+
+            // Unknown-unknowns prompt — appears once 2+ hypotheses exist. Pushes the
+            // user to add the boring/contrarian hypothesis they almost dismissed.
+            if board.activeHypotheses.count >= 2 && board.hypotheses.count < 6 {
+                HStack(spacing: 7) {
+                    Image(systemName: "questionmark.app.dashed")
+                        .font(.system(size: 11))
+                        .foregroundStyle(Theme.textDim)
+                    Text("Have you considered the boring or contrarian explanation?")
+                        .font(.caption)
+                        .italic()
+                        .foregroundStyle(Theme.textDim)
+                    Spacer(minLength: 0)
+                }
+                .padding(10)
+                .background(Color.white.opacity(0.018), in: RoundedRectangle(cornerRadius: 10))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .strokeBorder(Theme.border, style: StrokeStyle(lineWidth: 0.75, dash: [3, 2]))
+                )
+            }
+
+            // Conjunction-fallacy warnings — flag overlapping or "X and Y" hypotheses.
+            // Tversky/Kahneman's classic guard: P(X ∧ Y) ≤ P(X), so a hypothesis
+            // containing "and" is by definition less probable than its parts.
+            ForEach(Array(board.conjunctionWarnings.enumerated()), id: \.offset) { _, warning in
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "function")
+                        .font(.system(size: 10))
+                        .foregroundStyle(Theme.warning)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("CONJUNCTION CHECK")
+                            .font(.system(size: 8.5, weight: .heavy))
+                            .tracking(1.0)
+                            .foregroundStyle(Theme.warning)
+                        Text("\"\(warning.0.name)\": \(warning.1)")
+                            .font(.caption)
+                            .foregroundStyle(Theme.textDim)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(10)
+                .background(Theme.warning.opacity(0.06), in: RoundedRectangle(cornerRadius: 10))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .strokeBorder(Theme.warning.opacity(0.18), lineWidth: 1)
                 )
             }
         }

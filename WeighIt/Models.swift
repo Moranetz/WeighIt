@@ -61,6 +61,21 @@ enum Rating: String, Codable, CaseIterable, Identifiable {
         }
     }
 
+    /// Likelihood ratio P(E|H) / P(E|¬H) — the proper Bayesian interpretation of
+    /// what each rating says about a hypothesis. Used in strict Bayes mode to
+    /// compute posteriors via Bayes's theorem instead of weighted-sum heuristics.
+    /// Values mirror the Heuer/Tetlock convention of order-of-magnitude steps:
+    /// stronglySupports ≈ 9× more likely under H than under ¬H, contradicts ≈ 1/3, etc.
+    var likelihoodRatio: Double {
+        switch self {
+        case .stronglySupports:    9.0
+        case .supports:            3.0
+        case .irrelevant:          1.0
+        case .contradicts:         1.0 / 3.0
+        case .stronglyContradicts: 1.0 / 9.0
+        }
+    }
+
     var color: Color {
         switch self {
         case .stronglySupports: Color(hex: "7EC49B")
@@ -151,6 +166,19 @@ final class Hypothesis {
     /// rationalization (adjusting standards to fit conclusions).
     var falsifier: String
 
+    /// Prior probability for this hypothesis in strict Bayes mode (0...1). Default
+    /// is 0.0, which Reckon interprets as "use uniform prior across active hypotheses
+    /// at compute time." User-edited priors are treated literally and normalized.
+    /// Forces base-rate thinking up front — the most common cognitive failure ACH
+    /// users skip.
+    var priorProbability: Double
+
+    /// Auxiliary assumptions this hypothesis depends on. Quine-Duhem awareness: when
+    /// evidence "falsifies" a hypothesis, the failure may actually be in an auxiliary
+    /// assumption, not the core hypothesis itself. Surfacing this field reminds users
+    /// that refutation is conjunctive, not crisp.
+    var auxiliaryAssumptions: String
+
     init(name: String = "", colorHex: String = "EF8B6E", sortOrder: Int = 0, falsifier: String = "") {
         self.id = UUID()
         self.name = name
@@ -158,6 +186,8 @@ final class Hypothesis {
         self.isRuledOut = false
         self.sortOrder = sortOrder
         self.falsifier = falsifier
+        self.priorProbability = 0.0
+        self.auxiliaryAssumptions = ""
     }
 
     var color: Color { Color(hex: colorHex) }
@@ -365,6 +395,114 @@ final class Board {
             }
         }
         return total
+    }
+
+    // MARK: Bayesian core
+
+    /// Effective prior for a hypothesis: respects user-set priors when meaningfully
+    /// nonzero, otherwise distributes uniformly across active hypotheses. Always
+    /// normalized so all active hypotheses sum to 1.0.
+    func effectivePrior(for hypothesis: Hypothesis) -> Double {
+        guard !hypothesis.isRuledOut else { return 0 }
+        let totalUserPrior = activeHypotheses.reduce(0.0) { $0 + max(0, $1.priorProbability) }
+        if totalUserPrior > 0.001 {
+            return max(0, hypothesis.priorProbability) / totalUserPrior
+        }
+        return 1.0 / Double(activeHypotheses.count)
+    }
+
+    /// Bayesian posterior probability for a hypothesis given current evidence. Uses
+    /// each cell rating as a likelihood ratio per Tetlock/Heuer convention, then
+    /// computes posterior via Bayes's theorem. Credibility × relevance modulates how
+    /// much each rating shifts the posterior — low-credibility / low-relevance evidence
+    /// pulls the LR closer to 1 (no update).
+    ///
+    /// Returns a normalized probability in [0...1] across all active hypotheses.
+    func bayesianPosterior(for hypothesis: Hypothesis) -> Double {
+        guard !hypothesis.isRuledOut else { return 0 }
+        let active = activeHypotheses
+        guard !active.isEmpty else { return 0 }
+
+        // Compute unnormalized posterior for each active hypothesis: prior × ∏ LR
+        let unnormalized: [Double] = active.map { h in
+            var posterior = effectivePrior(for: h)
+            for ev in evidences {
+                guard let r = rating(evidenceID: ev.id, hypothesisID: h.id) else { continue }
+                let baseLR = r.likelihoodRatio
+                // Modulate LR toward 1 based on weight — weak evidence shouldn't
+                // swing posteriors as hard as a high-credibility, high-relevance datum.
+                let weight = (ev.credWeight.multiplier * ev.relWeight.multiplier) / 9.0  // 0...1
+                let adjustedLR = pow(baseLR, weight)
+                posterior *= adjustedLR
+            }
+            return posterior
+        }
+        let total = unnormalized.reduce(0.0, +)
+        guard total > 0 else { return effectivePrior(for: hypothesis) }
+        guard let myIndex = active.firstIndex(where: { $0.id == hypothesis.id }) else { return 0 }
+        return unnormalized[myIndex] / total
+    }
+
+    /// Hypotheses ranked by Bayesian posterior probability (descending). Used when
+    /// strict Bayes mode is on. The leading hypothesis is the one with highest
+    /// posterior — accounting for both priors and likelihood ratios from evidence.
+    var rankedByBayesianPosterior: [(hypothesis: Hypothesis, posterior: Double)] {
+        activeHypotheses
+            .map { ($0, bayesianPosterior(for: $0)) }
+            .sorted { $0.1 > $1.1 }
+    }
+
+    /// Inference-to-the-Best-Explanation score: explanatory completeness × consistency.
+    /// A hypothesis "best explains" the evidence if it accounts for many observations
+    /// (high support count) with few contradictions. Different from refutation-first
+    /// (which only counts negatives) and from Bayesian (which integrates priors). Used
+    /// when both refutation-first and Bayesian rankings disagree as a tiebreaker frame.
+    func ibeScore(for hypothesis: Hypothesis) -> Double {
+        guard !hypothesis.isRuledOut else { return 0 }
+        var supportPower = 0.0
+        var contradictPower = 0.0
+        for ev in evidences {
+            guard let r = rating(evidenceID: ev.id, hypothesisID: hypothesis.id) else { continue }
+            let weight = ev.credWeight.multiplier * ev.relWeight.multiplier
+            if r.value > 0 { supportPower += Double(r.value) * weight }
+            if r.value < 0 { contradictPower += Double(abs(r.value)) * weight }
+        }
+        // Best-explanation: rewards explained evidence, penalizes contradiction
+        return supportPower - contradictPower
+    }
+
+    var rankedByIBE: [(hypothesis: Hypothesis, score: Double)] {
+        activeHypotheses
+            .map { ($0, ibeScore(for: $0)) }
+            .sorted { $0.1 > $1.1 }
+    }
+
+    /// Conjunction-fallacy detection: hypotheses whose names share substantial overlap
+    /// or that contain "and" / "or" combining clauses. By definition, P(X ∧ Y) ≤ P(X),
+    /// so a hypothesis like "X and Y" can never be more probable than "X" alone.
+    /// Returns hypothesis pairs that may be conjunctively related so the UI can flag.
+    var conjunctionWarnings: [(Hypothesis, String)] {
+        var warnings: [(Hypothesis, String)] = []
+        for h in activeHypotheses {
+            let lower = h.name.lowercased()
+            if lower.contains(" and ") || lower.contains(" plus ") || lower.contains("&") {
+                warnings.append((h, "Has 'and' — conjunction is by definition less likely than either part alone"))
+            }
+        }
+        // Detect substantial name-overlap pairs
+        let active = activeHypotheses
+        for i in 0..<active.count {
+            for j in (i+1)..<active.count {
+                let a = Set(active[i].name.lowercased().split(separator: " ").map(String.init).filter { $0.count > 4 })
+                let b = Set(active[j].name.lowercased().split(separator: " ").map(String.init).filter { $0.count > 4 })
+                let shared = a.intersection(b)
+                if shared.count >= 2 {
+                    warnings.append((active[i], "Overlaps with '\(active[j].name)' — make sure they're truly competing"))
+                    break
+                }
+            }
+        }
+        return warnings
     }
 
     /// Astronomical metaphor: a star's "stability" — its steadiness under observation.

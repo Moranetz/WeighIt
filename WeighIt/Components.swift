@@ -5,6 +5,7 @@ import SwiftUI
 struct HypothesisRow: View {
     @Bindable var hypothesis: Hypothesis
     let canDelete: Bool
+    var showPriorSlider: Bool = false
     let onDelete: () -> Void
     private let haptic = UIImpactFeedbackGenerator(style: .medium)
     @State private var starPulse = false
@@ -13,6 +14,10 @@ struct HypothesisRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
         mainRow
+        if showPriorSlider {
+            priorSlider
+                .transition(.opacity)
+        }
         if falsifierExpanded {
             falsifierField
                 .transition(.opacity.combined(with: .move(edge: .top)))
@@ -123,6 +128,36 @@ struct HypothesisRow: View {
             }
         }
         .opacity(hypothesis.isRuledOut ? 0.55 : 1)
+    }
+
+    /// Prior probability slider — shown only when strict Bayes mode is on. Forces
+    /// users to think about base rates BEFORE adding evidence. Default value of 0
+    /// signals "use uniform prior"; any nonzero value is treated as user-set and
+    /// normalized at compute time across active hypotheses.
+    private var priorSlider: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text("PRIOR")
+                    .font(.system(size: 8.5, weight: .heavy))
+                    .tracking(1.0)
+                    .foregroundStyle(Theme.accent.opacity(0.8))
+                Spacer()
+                Text(hypothesis.priorProbability < 0.001
+                     ? "auto"
+                     : "\(Int(hypothesis.priorProbability * 100))% (rel.)")
+                    .font(.system(size: 9, weight: .heavy))
+                    .fontDesign(.rounded)
+                    .foregroundStyle(Theme.textDim)
+            }
+            Slider(
+                value: $hypothesis.priorProbability,
+                in: 0...1,
+                step: 0.05
+            )
+            .tint(hypothesis.color)
+        }
+        .padding(.horizontal, 14)
+        .padding(.bottom, 8)
     }
 
     /// Pre-commitment falsifier field — expands below the main row when toggled.

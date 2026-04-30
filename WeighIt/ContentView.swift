@@ -7,6 +7,7 @@ struct ContentView: View {
     @State private var activeBoard: Board?
     @State private var showBoardList = false
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
+    @AppStorage("strictBayesMode") private var strictBayesMode = false
     @State private var showOnboarding = false
     @State private var showExamplePicker = false
     @State private var showAISeed = false
@@ -76,6 +77,10 @@ struct ContentView: View {
                             Button("Load example…", systemImage: "books.vertical") { showExamplePicker = true }
                             if let board = activeBoard, !board.isTemplate {
                                 Button("Save as template", systemImage: "tray.and.arrow.down") { saveAsTemplate(board) }
+                            }
+                            Divider()
+                            Toggle(isOn: $strictBayesMode) {
+                                Label("Strict Bayes mode", systemImage: "function")
                             }
                             Divider()
                             if let board = activeBoard {
