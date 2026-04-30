@@ -104,14 +104,14 @@ struct ResultsView: View {
                 .padding(.vertical, 4)
 
                 if index < board.rankedHypotheses.count - 1 {
-                    Divider().overlay(Theme.border)
+                    Divider().overlay(Theme.hairline)
                 }
             }
 
             // Ruled out
             if !board.ruledOutHypotheses.isEmpty {
                 VStack(alignment: .leading, spacing: 4) {
-                    Divider().overlay(Theme.border)
+                    Divider().overlay(Theme.hairline)
                     HStack(spacing: 4) {
                         Text("Dimmed (ruled out):")
                             .font(.caption)

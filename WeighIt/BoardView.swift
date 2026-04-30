@@ -167,7 +167,7 @@ struct BoardView: View {
                 .background(Color.white.opacity(0.018), in: RoundedRectangle(cornerRadius: 10))
                 .overlay(
                     RoundedRectangle(cornerRadius: 10)
-                        .strokeBorder(Theme.border, style: StrokeStyle(lineWidth: 0.75, dash: [3, 2]))
+                        .strokeBorder(Theme.hairline, style: StrokeStyle(lineWidth: 0.75, dash: [3, 2]))
                 )
             }
 
@@ -360,7 +360,7 @@ struct BoardView: View {
                         .fill(showResults ? Color.white.opacity(0.025) : Theme.accent.opacity(0.08))
                     Capsule()
                         .strokeBorder(
-                            showResults ? Theme.border : Theme.accent.opacity(0.45),
+                            showResults ? Theme.hairline : Theme.accent.opacity(0.45),
                             lineWidth: 1
                         )
                 }
@@ -625,7 +625,7 @@ struct BoardView: View {
                     .foregroundStyle(Color(hex: "0A0A12"))
                     .padding(.horizontal, 18)
                     .padding(.vertical, 10)
-                    .background(Theme.accentGradient, in: Capsule())
+                    .background(Theme.accent, in: Capsule())
             }
             .padding(.top, 4)
         }

@@ -1,138 +1,102 @@
 import SwiftUI
 
+// MARK: - Theme
+//
+// Restrained palette. One brand color (warm peach) used as punctuation, not
+// decoration. Surfaces are flat near-black with a single low-saturation tint.
+// No gradient borders, no glow stacks, no atmospheric overlays — those signals
+// belong to the launch screen and the onboarding hero, not the work surface.
+
 enum Theme {
-    // Backgrounds — deep night sky with indigo/navy/black layered gradient.
-    // Reflects the established palette in melmarion/figma-design-library
-    // (Vynora, Glow-card): radial indigo → navy → black, not flat gray.
-    static let bg = Color(hex: "0B0F1F")          // deep midnight, slight blue
-    static let bgDeep = Color(hex: "050811")       // near-black for outer edges
-    static let bgIndigo = Color(hex: "1F1A40")     // indigo nebula tint
-    static let bgViolet = Color(hex: "2D2659")     // violet halo accent
+    // Background — a single deep, near-neutral with a faint cool bias so it
+    // doesn't read as warm gray. The work surface stays calm; decoration is
+    // earned by content.
+    static let bg = Color(hex: "0A0A0C")
+    static let bgElevated = Color(hex: "121215")
 
-    static let surface = Color.white.opacity(0.025)
-    static let raised = Color.white.opacity(0.045)
-    static let hover = Color.white.opacity(0.075)
+    // Surfaces — solid alphas, not gradients. A card is a card, not a window
+    // into a nebula.
+    static let surface = Color.white.opacity(0.035)
+    static let surfaceRaised = Color.white.opacity(0.06)
+    static let surfacePressed = Color.white.opacity(0.09)
 
-    // Borders
-    static let border = Color.white.opacity(0.07)
-    static let borderLight = Color.white.opacity(0.12)
+    // A single hairline. Used sparingly, mostly for inputs and dividers, not
+    // around every card.
+    static let hairline = Color.white.opacity(0.07)
 
-    // Accent — warm amber primary (matches app icon and brand) with a cool
-    // violet secondary for "thinking depth" cues. Gradient mixes both for
-    // richer card edges and hero highlights.
-    static let accent = Color(hex: "EF8B6E")              // primary warm peach
-    static let accentSecondary = Color(hex: "F5C49A")     // warm gold
-    static let accentCool = Color(hex: "B89BFF")          // soft violet — thinking / depth
-    static let accentDeep = Color(hex: "8B5CF6")          // violet-500 from figma library
-    static let accentGradient = LinearGradient(
-        colors: [Color(hex: "EF8B6E"), Color(hex: "F5C49A")],
-        startPoint: .topLeading, endPoint: .bottomTrailing
-    )
-    /// Cool-warm border gradient — used on card edges. Adds atmospheric depth
-    /// (echoes the Vynora/Glow-card pattern of conic violet gradients) without
-    /// making the warm brand feel cold.
-    static let cardEdgeGradient = LinearGradient(
-        colors: [
-            Color(hex: "EF8B6E").opacity(0.30),
-            Color(hex: "B89BFF").opacity(0.18),
-            Color.white.opacity(0.04),
-            Color(hex: "EF8B6E").opacity(0.10),
-        ],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
-    )
+    // Accent — warm peach. The only chromatic element on the board surface.
+    // Reserved for the brand mark, the active focus state, and primary CTAs.
+    static let accent = Color(hex: "EF8B6E")
+    static let accentMuted = Color(hex: "EF8B6E").opacity(0.18)
 
-    // Text — slightly cooler whites to fit the bluer background
-    static let textPrimary = Color(hex: "F0EBE6")
-    static let textSecondary = Color(hex: "A099B0")    // slight violet tint
-    static let textDim = Color(hex: "5E5870")
-    static let textMuted = Color(hex: "3D3850")
+    // Text scale — true neutrals, no chromatic tint. Type carries the page;
+    // it shouldn't compete with the surface.
+    static let textPrimary = Color(hex: "F4F2EF")
+    static let textSecondary = Color(hex: "9A9AA0")
+    static let textDim = Color(hex: "5C5C62")
+    static let textMuted = Color(hex: "3A3A40")
 
-    // Semantic
+    // Semantic — used only on labels/states that genuinely need to read as
+    // good/bad/warning. Never as decoration.
     static let positive = Color(hex: "7EC49B")
     static let negative = Color(hex: "D4746A")
     static let warning = Color(hex: "E8C47A")
-
-    // Card style
-    static let cardBackground = Color.white.opacity(0.022)
-    static let cardBorder = Color(hex: "B89BFF").opacity(0.18)  // violet hint, like glow-card
-    static let cardShadow = Color.black.opacity(0.18)
 }
 
 // MARK: - Card Modifier
-// Cards in Reckon have to RESPECT the starfield. The old style was nearly opaque —
-// every card was a black rectangle that buried the night sky. The new style is a
-// soft, very-translucent glass with a subtle inner gradient and an accent-tinted
-// border. Cards feel like "light lifted slightly off the sky," not blocks pasted on top.
+// A card is a calm container. Solid translucent fill, one hairline, one soft
+// ambient shadow. No gradient borders, no inner washes.
 
 struct CardStyle: ViewModifier {
+    var inset: CGFloat = 20
+    var cornerRadius: CGFloat = 18
+
     func body(content: Content) -> some View {
         content
-            .padding(22)
-            .background {
-                ZStack {
-                    // Glass layer — very thin, lets the starfield shimmer through.
-                    RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .fill(.ultraThinMaterial.opacity(0.50))
-
-                    // Soft indigo→violet wash inside the card. Echoes the figma-library
-                    // atmospheric components (Vynora) where dark surfaces have a faint
-                    // colored interior glow rather than being neutral gray.
-                    RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .fill(LinearGradient(
-                            colors: [
-                                Color(hex: "1F1A40").opacity(0.18),
-                                Color.white.opacity(0.02),
-                                Color(hex: "0B0F1F").opacity(0.10),
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ))
-
-                    // Cool-warm gradient border — peach top-left fading through violet
-                    // to peach bottom-right. Pulls the brand warmth in without losing
-                    // the contemplative cool register.
-                    RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .strokeBorder(Theme.cardEdgeGradient, lineWidth: 1)
-                }
-                .shadow(color: Color(hex: "8B5CF6").opacity(0.10), radius: 18, y: 6)
-                .shadow(color: Color.black.opacity(0.30), radius: 8, y: 2)
-            }
+            .padding(inset)
+            .background(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .fill(Theme.surface)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .strokeBorder(Theme.hairline, lineWidth: 0.5)
+            )
+            .shadow(color: Color.black.opacity(0.25), radius: 12, y: 4)
     }
 }
 
 extension View {
-    func cardStyle() -> some View {
-        modifier(CardStyle())
+    func cardStyle(inset: CGFloat = 20, cornerRadius: CGFloat = 18) -> some View {
+        modifier(CardStyle(inset: inset, cornerRadius: cornerRadius))
     }
 }
 
 // MARK: - Section Label
-// Reckon's section labels read like chapter titles in an observatory log book:
-// uppercase, tracked, soft, with a tiny star glyph that suggests "this is part of
-// the sky chart." Optional icon parameter overrides the default star.
+// Sentence-cased, semibold, no uppercase tracked novelty. The icon is
+// optional and quiet — same color as the label, same weight, smaller size.
 
 struct SectionLabel: View {
     let text: String
     var icon: String? = nil
 
     var body: some View {
-        HStack(spacing: 7) {
-            Image(systemName: icon ?? "sparkle")
-                .font(.system(size: 9, weight: .semibold))
-                .foregroundStyle(Theme.accent.opacity(0.85))
-            Text(text.uppercased())
-                .font(.system(size: 11, weight: .heavy))
-                .tracking(1.6)
+        HStack(spacing: 6) {
+            if let icon {
+                Image(systemName: icon)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Theme.textSecondary)
+            }
+            Text(text)
+                .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(Theme.textSecondary)
         }
     }
 }
 
 // MARK: - Field Style
-// A focused field that glows softly when active — like a telescope tracking. Used
-// for the question + conclusion text fields so they feel like part of the
-// observatory, not generic iOS inputs.
+// A focused input gets a hairline that brightens to the accent. No glow, no
+// outer shadow. The change in border weight + color is enough.
 
 struct CelestialFieldStyle: ViewModifier {
     var isFocused: Bool = false
@@ -140,22 +104,18 @@ struct CelestialFieldStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
             .padding(14)
-            .background {
+            .background(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(Color.white.opacity(0.025))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .strokeBorder(
-                                isFocused ? Theme.accent.opacity(0.6) : Theme.border,
-                                lineWidth: isFocused ? 1.5 : 1
-                            )
+                    .fill(Color.white.opacity(0.03))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(
+                        isFocused ? Theme.accent.opacity(0.55) : Theme.hairline,
+                        lineWidth: isFocused ? 1.25 : 0.5
                     )
-                    .shadow(
-                        color: isFocused ? Theme.accent.opacity(0.25) : .clear,
-                        radius: isFocused ? 12 : 0
-                    )
-            }
-            .animation(.spring(response: 0.4, dampingFraction: 0.85), value: isFocused)
+            )
+            .animation(.easeOut(duration: 0.18), value: isFocused)
     }
 }
 
@@ -165,10 +125,9 @@ extension View {
     }
 }
 
-// MARK: - Starfield
-// Layered backdrop with subtle twinkle. Stars at three "depths" — a still distant layer,
-// a slowly twinkling middle layer, and a few bright "named" stars. Stable seed so the
-// pattern is consistent across launches; only the alpha breathes.
+// MARK: - Starfield (preserved for onboarding hero only)
+// Kept available so the onboarding hero can still feel atmospheric. Not used
+// on the working board — the work surface stays quiet.
 
 struct StarfieldView: View {
     let starCount: Int
@@ -186,7 +145,6 @@ struct StarfieldView: View {
                 Canvas { context, size in
                     let now = timeline.date.timeIntervalSinceReferenceDate
                     var rng = SeededGenerator(seed: seed)
-                    // Distant dust — most stars, no twinkle, just there.
                     for _ in 0..<starCount {
                         let x = Double.random(in: 0...size.width, using: &rng)
                         let y = Double.random(in: 0...size.height, using: &rng)
@@ -195,7 +153,6 @@ struct StarfieldView: View {
                         let rect = CGRect(x: x - r, y: y - r, width: r * 2, height: r * 2)
                         context.fill(Path(ellipseIn: rect), with: .color(.white.opacity(alpha)))
                     }
-                    // Twinkling layer — fewer, brighter, with slow alpha breathing.
                     var rng2 = SeededGenerator(seed: seed &+ 1)
                     let twinkleCount = max(8, starCount / 8)
                     for i in 0..<twinkleCount {
@@ -205,9 +162,8 @@ struct StarfieldView: View {
                         let baseAlpha = Double.random(in: 0.20...0.55, using: &rng2)
                         let speed = Double.random(in: 0.6...1.4, using: &rng2)
                         let offset = Double(i) * 0.7
-                        let breath = (sin(now * speed + offset) + 1) / 2  // 0...1
+                        let breath = (sin(now * speed + offset) + 1) / 2
                         let alpha = baseAlpha * (0.4 + breath * 0.6)
-                        // Soft glow — fill with a slightly larger blurred ellipse first
                         let glowRect = CGRect(x: x - r * 2.5, y: y - r * 2.5, width: r * 5, height: r * 5)
                         context.fill(Path(ellipseIn: glowRect), with: .color(.white.opacity(alpha * 0.18)))
                         let rect = CGRect(x: x - r, y: y - r, width: r * 2, height: r * 2)
@@ -225,7 +181,6 @@ private struct SeededGenerator: RandomNumberGenerator {
     var state: UInt64
     init(seed: UInt64) { self.state = seed != 0 ? seed : 0xdeadbeef }
     mutating func next() -> UInt64 {
-        // SplitMix64 — fast, stable, good distribution
         state &+= 0x9E3779B97F4A7C15
         var z = state
         z = (z ^ (z >> 30)) &* 0xBF58476D1CE4E5B9

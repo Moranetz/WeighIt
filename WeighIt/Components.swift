@@ -8,7 +8,6 @@ struct HypothesisRow: View {
     var showPriorSlider: Bool = false
     let onDelete: () -> Void
     private let haptic = UIImpactFeedbackGenerator(style: .medium)
-    @State private var starPulse = false
     @State private var falsifierExpanded = false
     @State private var showSteelmanSheet = false
     @AppStorage("plainEnglishMode") private var plainEnglishMode = false
@@ -43,35 +42,23 @@ struct HypothesisRow: View {
     }
 
     private var mainRow: some View {
-        HStack(spacing: 14) {
-            // The star — a glowing point that breathes with its hypothesis.
-            // When ruled out, the star is dimmed (visually "dimmed star").
-            ZStack {
-                Circle()
-                    .fill(hypothesis.color.opacity(hypothesis.isRuledOut ? 0 : 0.25))
-                    .frame(width: 38, height: 38)
-                    .blur(radius: 8)
-                    .scaleEffect(starPulse ? 1.05 : 0.95)
-                Image(systemName: hypothesis.isRuledOut ? "star.slash" : "star.fill")
-                    .font(.system(size: 16))
-                    .foregroundStyle(hypothesis.color)
-                    .shadow(color: hypothesis.isRuledOut ? .clear : hypothesis.color.opacity(0.6), radius: 6)
-            }
-            .frame(width: 32)
-            .animation(.easeInOut(duration: 2.4).repeatForever(autoreverses: true), value: starPulse)
-            .onAppear { starPulse = true }
+        HStack(spacing: 12) {
+            // Quiet color identifier — a small dot, not a glowing halo. Color
+            // is information (which hypothesis), not decoration.
+            Circle()
+                .fill(hypothesis.color.opacity(hypothesis.isRuledOut ? 0.25 : 1))
+                .frame(width: 8, height: 8)
 
             if hypothesis.isRuledOut {
                 Text(hypothesis.name.isEmpty ? (plainEnglishMode ? "Hypothesis" : "Star") : hypothesis.name)
-                    .font(.system(.subheadline, design: .rounded))
+                    .font(.system(size: 15, weight: .regular))
                     .foregroundStyle(Theme.textSecondary)
                     .strikethrough()
             } else {
-                TextField(plainEnglishMode ? "Name this hypothesis…" : "Name this star…",
+                TextField(plainEnglishMode ? "Name this hypothesis…" : "Name this hypothesis…",
                           text: $hypothesis.name,
                           axis: .vertical)
-                    .font(.system(.subheadline, design: .rounded))
-                    .fontWeight(.medium)
+                    .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(Theme.textPrimary)
                     .lineLimit(1...2)
             }
@@ -134,29 +121,11 @@ struct HypothesisRow: View {
             }
         }
         .padding(.horizontal, 14)
-        .padding(.vertical, 11)
-        .background {
-            ZStack {
-                // Subtle vignette tinted with the star's color so each row reads as
-                // its own pocket of sky around its star.
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(Color.white.opacity(0.025))
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(LinearGradient(
-                        colors: [
-                            hypothesis.color.opacity(hypothesis.isRuledOut ? 0 : 0.10),
-                            Color.clear,
-                        ],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    ))
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(
-                        hypothesis.color.opacity(hypothesis.isRuledOut ? 0.06 : 0.18),
-                        lineWidth: 1
-                    )
-            }
-        }
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Theme.surface)
+        )
         .opacity(hypothesis.isRuledOut ? 0.55 : 1)
     }
 
@@ -307,7 +276,7 @@ struct EvidenceRow: View {
                     .fill(Color.white.opacity(0.022))
                 // Tiny twinkle in the corner — observation log entry asterism
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(Theme.border.opacity(0.7), lineWidth: 1)
+                    .strokeBorder(Theme.hairline.opacity(0.7), lineWidth: 1)
             }
         }
     }
@@ -401,10 +370,10 @@ struct NotePanel: View {
                 .foregroundStyle(Theme.textPrimary)
                 .lineLimit(2...5)
                 .padding(12)
-                .background(Theme.raised, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .background(Theme.surfaceRaised, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .strokeBorder(Theme.border, lineWidth: 1)
+                        .strokeBorder(Theme.hairline, lineWidth: 1)
                 )
                 .onChange(of: draft) { _, newVal in
                     onUpdate(newVal)
@@ -489,7 +458,7 @@ struct SteelmanSheet: View {
                             .padding(.vertical, 12)
                             .frame(maxWidth: .infinity)
                             .background(Color.white.opacity(0.03), in: Capsule())
-                            .overlay(Capsule().strokeBorder(Theme.border, lineWidth: 1))
+                            .overlay(Capsule().strokeBorder(Theme.hairline, lineWidth: 1))
                     }
 
                     Button { onSaveAndDim() } label: {
@@ -504,7 +473,7 @@ struct SteelmanSheet: View {
                         .padding(.horizontal, 18)
                         .padding(.vertical, 12)
                         .frame(maxWidth: .infinity)
-                        .background(Theme.accentGradient, in: Capsule())
+                        .background(Theme.accent, in: Capsule())
                     }
                 }
                 .padding(.bottom, 24)

@@ -24,24 +24,16 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // Background — deep night sky. Layered: solid base, faint nebula glow,
-                // subtle starfield, atmospheric color washes. Reinforces the observatory
-                // metaphor at the perceptual level.
-                Color(hex: "0B0F1F").ignoresSafeArea()
-                RadialGradient(colors: [Color(hex: "2D2659").opacity(0.55), .clear],
-                               center: .topLeading, startRadius: 0, endRadius: 700)
-                    .ignoresSafeArea()
-                RadialGradient(colors: [Color(hex: "0F2436").opacity(0.45), .clear],
-                               center: .bottomTrailing, startRadius: 0, endRadius: 550)
-                    .ignoresSafeArea()
-                RadialGradient(colors: [Color(hex: "8B5CF6").opacity(0.10), .clear],
-                               center: UnitPoint(x: 0.85, y: 0.15), startRadius: 0, endRadius: 350)
-                    .ignoresSafeArea()
-                StarfieldView(starCount: 90, seed: 47)
-                    .ignoresSafeArea()
-                RadialGradient(colors: [Theme.accent.opacity(0.04), .clear],
-                               center: .top, startRadius: 0, endRadius: 400)
-                    .ignoresSafeArea()
+                // Calm work surface. One near-black ground, one extremely faint
+                // warm wash so the brand color carries through without flooding.
+                Theme.bg.ignoresSafeArea()
+                RadialGradient(
+                    colors: [Theme.accent.opacity(0.05), .clear],
+                    center: .top,
+                    startRadius: 0,
+                    endRadius: 420
+                )
+                .ignoresSafeArea()
 
                 if let board = activeBoard {
                     BoardView(board: board)
@@ -350,7 +342,7 @@ struct ProgressRingView: View {
     var body: some View {
         ZStack {
             Circle()
-                .stroke(Theme.border, lineWidth: 3)
+                .stroke(Theme.hairline, lineWidth: 3)
             Circle()
                 .trim(from: 0, to: Double(percent) / 100)
                 .stroke(done ? Theme.positive : Theme.accent, style: StrokeStyle(lineWidth: 3, lineCap: .round))
@@ -439,7 +431,7 @@ struct OnboardingView: View {
                         .foregroundStyle(Color(hex: "0A0A12"))
                         .padding(.horizontal, 40)
                         .padding(.vertical, 16)
-                        .background(Theme.accentGradient, in: RoundedRectangle(cornerRadius: 14))
+                        .background(Theme.accent, in: RoundedRectangle(cornerRadius: 14))
                         .shadow(color: Theme.accent.opacity(0.4), radius: 12, y: 4)
                 }
                 .padding(.bottom, 40)
@@ -724,7 +716,7 @@ struct ExamplePickerView: View {
                                     .background(Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 12))
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 12)
-                                            .strokeBorder(quickPromptFocused ? Theme.accent.opacity(0.5) : Theme.border, lineWidth: 1)
+                                            .strokeBorder(quickPromptFocused ? Theme.accent.opacity(0.5) : Theme.hairline, lineWidth: 1)
                                     )
 
                                 Button {
@@ -736,7 +728,7 @@ struct ExamplePickerView: View {
                                         .font(.system(size: 16, weight: .heavy))
                                         .foregroundStyle(Color(hex: "0A0A12"))
                                         .frame(width: 44, height: 44)
-                                        .background(Theme.accentGradient, in: Circle())
+                                        .background(Theme.accent, in: Circle())
                                         .opacity(quickPrompt.trimmingCharacters(in: .whitespaces).count >= 8 ? 1 : 0.35)
                                 }
                                 .disabled(quickPrompt.trimmingCharacters(in: .whitespaces).count < 8)
@@ -1068,7 +1060,7 @@ struct AISeedView: View {
                     .background(Color.white.opacity(0.03), in: RoundedRectangle(cornerRadius: 14))
                     .overlay(
                         RoundedRectangle(cornerRadius: 14)
-                            .strokeBorder(promptFocused ? Theme.accent.opacity(0.5) : Theme.border, lineWidth: 1)
+                            .strokeBorder(promptFocused ? Theme.accent.opacity(0.5) : Theme.hairline, lineWidth: 1)
                     )
 
                 if let err = errorMessage {
@@ -1121,7 +1113,7 @@ struct AISeedView: View {
             .padding(.horizontal, 28)
             .padding(.vertical, 14)
             .frame(maxWidth: .infinity)
-            .background(Theme.accentGradient, in: Capsule())
+            .background(Theme.accent, in: Capsule())
             .opacity(prompt.trimmingCharacters(in: .whitespaces).count < 10 && result == nil ? 0.4 : 1)
         }
         .disabled(prompt.trimmingCharacters(in: .whitespaces).count < 10 && result == nil)
@@ -1602,7 +1594,7 @@ struct CalibrationView: View {
                 .fill(.ultraThinMaterial.opacity(0.55))
                 .overlay(
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .strokeBorder(Theme.border, lineWidth: 1)
+                        .strokeBorder(Theme.hairline, lineWidth: 1)
                 )
         }
     }

@@ -46,10 +46,10 @@ struct MatrixGridView: View {
                         .padding(.leading, 14)
                         .background(Color(hex: "161416"))
                         .overlay(alignment: .trailing) {
-                            Rectangle().fill(Theme.border).frame(width: 1)
+                            Rectangle().fill(Theme.hairline).frame(width: 1)
                         }
                         .overlay(alignment: .bottom) {
-                            Rectangle().fill(Theme.borderLight).frame(height: 1)
+                            Rectangle().fill(Theme.hairline).frame(height: 1)
                         }
 
                     ForEach(board.sortedHypotheses) { hyp in
@@ -141,10 +141,10 @@ struct MatrixGridView: View {
                         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: refutations)
                         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: biasWarning)
                         .overlay(alignment: .trailing) {
-                            Rectangle().fill(Theme.border).frame(width: 1)
+                            Rectangle().fill(Theme.hairline).frame(width: 1)
                         }
                         .overlay(alignment: .bottom) {
-                            Rectangle().fill(Theme.borderLight).frame(height: 1)
+                            Rectangle().fill(Theme.hairline).frame(height: 1)
                         }
                     }
                 }
@@ -164,10 +164,10 @@ struct MatrixGridView: View {
                             .frame(minHeight: 66)
                             .background(Theme.bg.opacity(0.5))
                             .overlay(alignment: .trailing) {
-                                Rectangle().fill(Theme.border).frame(width: 1)
+                                Rectangle().fill(Theme.hairline).frame(width: 1)
                             }
                             .overlay(alignment: .bottom) {
-                                Rectangle().fill(Theme.border).frame(height: 1)
+                                Rectangle().fill(Theme.hairline).frame(height: 1)
                             }
 
                         ForEach(board.sortedHypotheses) { hyp in
@@ -222,10 +222,10 @@ struct MatrixGridView: View {
                                 .presentationCompactAdaptation(.popover)
                             }
                             .overlay(alignment: .trailing) {
-                                Rectangle().fill(Theme.border).frame(width: 1)
+                                Rectangle().fill(Theme.hairline).frame(width: 1)
                             }
                             .overlay(alignment: .bottom) {
-                                Rectangle().fill(Theme.border).frame(height: 1)
+                                Rectangle().fill(Theme.hairline).frame(height: 1)
                             }
                         }
                     }
@@ -235,7 +235,7 @@ struct MatrixGridView: View {
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(Theme.border, lineWidth: 1)
+                .strokeBorder(Theme.hairline, lineWidth: 1)
         )
         .background(Color.black.opacity(0.15), in: RoundedRectangle(cornerRadius: 14))
     }
@@ -254,7 +254,7 @@ struct PosteriorBar: View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
                 Capsule()
-                    .fill(Theme.border.opacity(0.6))
+                    .fill(Theme.hairline.opacity(0.6))
                 Capsule()
                     .fill(LinearGradient(
                         colors: [color.opacity(0.6), color],
@@ -283,7 +283,7 @@ struct SupportBar: View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
                 Capsule()
-                    .fill(Theme.border.opacity(0.6))
+                    .fill(Theme.hairline.opacity(0.6))
                 if supports > 0 && totalCells > 0 {
                     let pct = min(1.0, Double(supports) / Double(totalCells))
                     Capsule()
