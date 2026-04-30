@@ -17,39 +17,39 @@ import SwiftUI
 //      pattern-recognition anchor.
 
 enum Theme {
-    // Ground — warm chocolate-tinted dark. Reads as a surface, not a hole.
-    static let bg = Color(hex: "1A1410")
-    static let bgElevated = Color(hex: "241C16")
+    // Ground — deep, rich indigo-near-black. Darker than chocolate-warm but
+    // with enough hue saturation that it reads as material, not void.
+    // The slight indigo tint is what makes it "rich" instead of just dark.
+    static let bg = Color(hex: "0A0612")
+    static let bgElevated = Color(hex: "150C1A")
 
-    // Card surfaces — slightly stronger than the previous restraint pass so
-    // they have presence. Warm white over warm dark gives a subtle peach cast.
-    static let surface = Color.white.opacity(0.05)
-    static let surfaceRaised = Color.white.opacity(0.08)
-    static let surfacePressed = Color.white.opacity(0.12)
+    // Card surfaces — bumped for stronger contrast and presence on the
+    // darker ground. Cards now read as clearly lifted, not barely-there.
+    static let surface = Color.white.opacity(0.08)
+    static let surfaceRaised = Color.white.opacity(0.12)
+    static let surfacePressed = Color.white.opacity(0.16)
 
-    static let hairline = Color.white.opacity(0.10)
+    static let hairline = Color.white.opacity(0.14)
 
-    // Brand accent — confident saturated coral. Brighter and more luminous
-    // than the previous dim peach so it actually carries energy.
+    // Brand accent — saturated coral.
     static let accent = Color(hex: "FF6B47")
     static let accentMuted = Color(hex: "FF6B47").opacity(0.18)
 
-    // Secondary accent — vivid indigo. Used for "thought" cues (priors,
-    // posteriors, depth) so it never competes with the brand for primary CTAs.
+    // Secondary — vivid indigo for thought / depth.
     static let accentSecondary = Color(hex: "818CF8")
 
-    // Text — warm cream whites, never neutral gray. The warm cast keeps the
-    // surface feeling like material, not a screen.
-    static let textPrimary = Color(hex: "F9F3EC")
-    static let textSecondary = Color(hex: "BCB0A4")
-    static let textDim = Color(hex: "7A7269")
-    static let textMuted = Color(hex: "4D4640")
+    // Text — lifted for higher contrast against the deeper ground.
+    // textPrimary brighter, textSecondary brighter, textDim lifted out
+    // of the read-as-disabled zone.
+    static let textPrimary = Color(hex: "FFFCF7")
+    static let textSecondary = Color(hex: "C9BEB2")
+    static let textDim = Color(hex: "847A6E")
+    static let textMuted = Color(hex: "5A5048")
 
-    // Semantic — bright and saturated. These read as "good / bad / careful"
-    // at a glance, before a single word is parsed.
-    static let positive = Color(hex: "34D399")  // bright emerald
-    static let negative = Color(hex: "F87171")  // bright cherry
-    static let warning = Color(hex: "FBBF24")   // saturated mustard
+    // Semantic.
+    static let positive = Color(hex: "34D399")
+    static let negative = Color(hex: "F87171")
+    static let warning = Color(hex: "FBBF24")
 }
 
 // MARK: - Card Modifier
@@ -69,7 +69,11 @@ struct CardStyle: ViewModifier {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .strokeBorder(Theme.hairline, lineWidth: 0.5)
             )
-            .shadow(color: Color.black.opacity(0.30), radius: 14, y: 5)
+            // Two-layer shadow: deep ambient for elevation + faint indigo
+            // bloom so the card feels "lifted into a richer atmosphere"
+            // instead of pasted onto a flat dark.
+            .shadow(color: Color(hex: "818CF8").opacity(0.10), radius: 24, y: 0)
+            .shadow(color: Color.black.opacity(0.45), radius: 14, y: 6)
     }
 }
 

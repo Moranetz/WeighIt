@@ -24,23 +24,31 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // Warm work surface. Chocolate-tinted ground with two
-                // confident chromatic washes — coral at top-leading, indigo
-                // at bottom-trailing. The page should feel ALIVE, like
-                // working under sunset light, not in a cave.
+                // Rich, deep ground with confident atmospheric depth. The
+                // washes go in as a layered background — indigo bloom up
+                // high, deeper plum at center, coral warmth bottom-leading —
+                // so the surface itself reads as having atmosphere rather
+                // than being a flat dark plane.
                 Theme.bg.ignoresSafeArea()
                 RadialGradient(
-                    colors: [Theme.accent.opacity(0.22), .clear],
+                    colors: [Color(hex: "5B4FCF").opacity(0.32), .clear],
                     center: .topLeading,
                     startRadius: 0,
-                    endRadius: 600
+                    endRadius: 700
                 )
                 .ignoresSafeArea()
                 RadialGradient(
-                    colors: [Theme.accentSecondary.opacity(0.18), .clear],
-                    center: .bottomTrailing,
+                    colors: [Color(hex: "FF6B47").opacity(0.20), .clear],
+                    center: UnitPoint(x: 0.85, y: 0.20),
                     startRadius: 0,
-                    endRadius: 600
+                    endRadius: 520
+                )
+                .ignoresSafeArea()
+                RadialGradient(
+                    colors: [Color(hex: "1A1030").opacity(0.6), .clear],
+                    center: .bottom,
+                    startRadius: 0,
+                    endRadius: 700
                 )
                 .ignoresSafeArea()
 

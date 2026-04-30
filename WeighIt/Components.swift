@@ -42,12 +42,24 @@ struct HypothesisRow: View {
     }
 
     private var mainRow: some View {
-        HStack(spacing: 12) {
-            // Quiet color identifier — a small dot, not a glowing halo. Color
-            // is information (which hypothesis), not decoration.
-            Circle()
-                .fill(hypothesis.color.opacity(hypothesis.isRuledOut ? 0.25 : 1))
-                .frame(width: 8, height: 8)
+        HStack(spacing: 14) {
+            // Color identity with a soft glow halo — each hypothesis is
+            // visibly anchored by its own pocket of light. The halo earns
+            // its place because it's the one chromatic moment per row.
+            ZStack {
+                Circle()
+                    .fill(hypothesis.color.opacity(hypothesis.isRuledOut ? 0 : 0.35))
+                    .frame(width: 28, height: 28)
+                    .blur(radius: 10)
+                Circle()
+                    .fill(hypothesis.color.opacity(hypothesis.isRuledOut ? 0.25 : 1))
+                    .frame(width: 10, height: 10)
+                    .shadow(
+                        color: hypothesis.isRuledOut ? .clear : hypothesis.color.opacity(0.7),
+                        radius: 4
+                    )
+            }
+            .frame(width: 24)
 
             if hypothesis.isRuledOut {
                 Text(hypothesis.name.isEmpty ? (plainEnglishMode ? "Hypothesis" : "Star") : hypothesis.name)
