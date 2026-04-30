@@ -8,8 +8,19 @@ struct HypothesisRow: View {
     let onDelete: () -> Void
     private let haptic = UIImpactFeedbackGenerator(style: .medium)
     @State private var starPulse = false
+    @State private var falsifierExpanded = false
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+        mainRow
+        if falsifierExpanded {
+            falsifierField
+                .transition(.opacity.combined(with: .move(edge: .top)))
+        }
+        }
+    }
+
+    private var mainRow: some View {
         HStack(spacing: 14) {
             // The star — a glowing point that breathes with its hypothesis.
             // When ruled out, the star is dimmed (visually "dimmed star").
@@ -43,17 +54,31 @@ struct HypothesisRow: View {
 
             Spacer()
 
+            // Falsifier toggle — opens the "what would prove this wrong?" field
+            Button {
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                    falsifierExpanded.toggle()
+                }
+            } label: {
+                Image(systemName: hypothesis.falsifier.isEmpty
+                      ? "questionmark.bubble"
+                      : "questionmark.bubble.fill")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(hypothesis.falsifier.isEmpty
+                                     ? Theme.textDim
+                                     : Theme.accent)
+            }
+
             Button {
                 haptic.impactOccurred()
                 withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
                     hypothesis.isRuledOut.toggle()
                 }
             } label: {
-                Label(hypothesis.isRuledOut ? "relight" : "dim",
-                      systemImage: hypothesis.isRuledOut ? "sparkles" : "moon.stars")
-                    .font(.system(size: 10, weight: .bold))
+                Image(systemName: hypothesis.isRuledOut ? "sparkles" : "moon.stars")
+                    .font(.system(size: 11, weight: .bold))
                     .foregroundStyle(hypothesis.isRuledOut ? Theme.positive : Theme.negative)
-                    .padding(.horizontal, 10)
+                    .padding(.horizontal, 8)
                     .padding(.vertical, 5)
                     .background(
                         (hypothesis.isRuledOut ? Theme.positive : Theme.negative).opacity(0.1),
@@ -98,6 +123,42 @@ struct HypothesisRow: View {
             }
         }
         .opacity(hypothesis.isRuledOut ? 0.55 : 1)
+    }
+
+    /// Pre-commitment falsifier field — expands below the main row when toggled.
+    /// Asks "what observation would prove this hypothesis wrong?" — locking the
+    /// answer at hypothesis-creation time so later evidence can be checked against it.
+    private var falsifierField: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 5) {
+                Image(systemName: "exclamationmark.triangle")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(Theme.accent)
+                Text("WHAT WOULD FALSIFY THIS?")
+                    .font(.system(size: 9, weight: .heavy))
+                    .tracking(1.0)
+                    .foregroundStyle(Theme.accent.opacity(0.85))
+            }
+            .padding(.top, 10)
+
+            TextField("e.g. \"If we see X, this is wrong.\"", text: $hypothesis.falsifier, axis: .vertical)
+                .font(.caption)
+                .foregroundStyle(Theme.textPrimary)
+                .lineLimit(1...3)
+                .padding(10)
+                .background(Color.white.opacity(0.025), in: RoundedRectangle(cornerRadius: 8))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .strokeBorder(Theme.accent.opacity(0.18), lineWidth: 1)
+                )
+
+            Text("Locking a falsifier up front is the structural difference between reasoning and rationalization.")
+                .font(.system(size: 10))
+                .italic()
+                .foregroundStyle(Theme.textDim)
+                .padding(.bottom, 4)
+        }
+        .padding(.horizontal, 14)
     }
 }
 

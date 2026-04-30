@@ -297,7 +297,7 @@ struct BoardView: View {
     // MARK: - Conclusion
 
     private var conclusionSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 14) {
             SectionLabel(text: "Your verdict", icon: "checkmark.seal")
             Text("Based on the constellation, what do you think?")
                 .font(.caption)
@@ -309,8 +309,117 @@ struct BoardView: View {
                 .foregroundStyle(Theme.textPrimary)
                 .focused($conclusionFocused)
                 .celestialField(isFocused: conclusionFocused)
+
+            // Calibration: confidence slider + check-in date. These appear once a
+            // verdict has been written. Reckon will surface a calibration curve
+            // across all completed boards over time, turning a one-shot tool into
+            // a thinking gym that gets better with each decision.
+            if !board.conclusion.isEmpty {
+                calibrationCard
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+            }
         }
         .cardStyle()
+        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: board.conclusion.isEmpty)
+    }
+
+    private var calibrationCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 6) {
+                Image(systemName: "gauge.with.needle")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(Theme.accent)
+                Text("CALIBRATION")
+                    .font(.system(size: 9, weight: .heavy))
+                    .tracking(1.4)
+                    .foregroundStyle(Theme.accent.opacity(0.85))
+            }
+
+            // Confidence
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text("How confident are you?")
+                        .font(.caption)
+                        .foregroundStyle(Theme.textSecondary)
+                    Spacer()
+                    Text("\(board.confidence ?? 50)%")
+                        .font(.system(.caption, design: .rounded))
+                        .fontWeight(.heavy)
+                        .foregroundStyle(Theme.accent)
+                        .contentTransition(.numericText())
+                }
+                Slider(
+                    value: Binding(
+                        get: { Double(board.confidence ?? 50) },
+                        set: { board.confidence = Int($0) }
+                    ),
+                    in: 0...100,
+                    step: 5
+                )
+                .tint(Theme.accent)
+            }
+
+            // Check-in date
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Remind me to check the outcome on:")
+                    .font(.caption)
+                    .foregroundStyle(Theme.textSecondary)
+                HStack(spacing: 6) {
+                    ForEach(checkInChoices, id: \.label) { choice in
+                        Button {
+                            haptic.impactOccurred()
+                            withAnimation(.spring(response: 0.3)) {
+                                board.checkInDate = choice.date
+                            }
+                        } label: {
+                            Text(choice.label)
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(
+                                    isSelectedCheckIn(choice) ? Color(hex: "0A0A12") : Theme.textSecondary
+                                )
+                                .padding(.horizontal, 9)
+                                .padding(.vertical, 6)
+                                .background(
+                                    isSelectedCheckIn(choice) ? Theme.accent : Color.white.opacity(0.04),
+                                    in: Capsule()
+                                )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+        .padding(14)
+        .background {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color.white.opacity(0.025))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(Theme.accent.opacity(0.18), lineWidth: 1)
+                )
+        }
+    }
+
+    private struct CheckInChoice {
+        let label: String
+        let days: Int
+        var date: Date { Calendar.current.date(byAdding: .day, value: days, to: Date()) ?? Date() }
+    }
+
+    private var checkInChoices: [CheckInChoice] {
+        [
+            .init(label: "1w", days: 7),
+            .init(label: "1m", days: 30),
+            .init(label: "3m", days: 90),
+            .init(label: "6m", days: 180),
+            .init(label: "1y", days: 365),
+        ]
+    }
+
+    private func isSelectedCheckIn(_ choice: CheckInChoice) -> Bool {
+        guard let stored = board.checkInDate else { return false }
+        // Match within ~12 hours
+        return abs(stored.timeIntervalSince(choice.date)) < 12 * 3600
     }
 
     // MARK: - Footer

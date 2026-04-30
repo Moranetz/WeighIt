@@ -3,12 +3,17 @@ import SwiftData
 
 struct ContentView: View {
     @Environment(\.modelContext) private var context
-    @Query(sort: \Board.updatedAt, order: .reverse) private var boards: [Board]
+    @Query(sort: \Board.updatedAt, order: .reverse) private var allBoards: [Board]
     @State private var activeBoard: Board?
     @State private var showBoardList = false
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
     @State private var showOnboarding = false
     @State private var showExamplePicker = false
+    @State private var showAISeed = false
+
+    // Working boards (exclude templates from the main list / picker logic)
+    private var boards: [Board] { allBoards.filter { !$0.isTemplate } }
+    private var templates: [Board] { allBoards.filter { $0.isTemplate } }
 
     var body: some View {
         NavigationStack {
@@ -69,6 +74,9 @@ struct ContentView: View {
                         Menu {
                             Button("New blank board", systemImage: "plus") { createNewBoard() }
                             Button("Load example…", systemImage: "books.vertical") { showExamplePicker = true }
+                            if let board = activeBoard, !board.isTemplate {
+                                Button("Save as template", systemImage: "tray.and.arrow.down") { saveAsTemplate(board) }
+                            }
                             Divider()
                             if let board = activeBoard {
                                 ShareLink(item: board.exportMarkdown()) {
@@ -129,11 +137,54 @@ struct ContentView: View {
                     context.insert(board)
                     activeBoard = board
                     showExamplePicker = false
-                }
+                },
+                onPickTemplate: { template in
+                    let board = newBoardFromTemplate(template)
+                    context.insert(board)
+                    activeBoard = board
+                    showExamplePicker = false
+                },
+                onAISeed: {
+                    showExamplePicker = false
+                    // Defer slightly so the sheet dismissal animation can finish
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                        showAISeed = true
+                    }
+                },
+                templates: templates
             )
             .presentationDetents([.large])
             .presentationDragIndicator(.visible)
         }
+        .sheet(isPresented: $showAISeed) {
+            AISeedView { board in
+                context.insert(board)
+                activeBoard = board
+                showAISeed = false
+            } onCancel: {
+                showAISeed = false
+            }
+            .presentationDetents([.large])
+            .presentationDragIndicator(.visible)
+        }
+    }
+
+    private func newBoardFromTemplate(_ template: Board) -> Board {
+        let board = Board(question: "")
+        board.hypotheses.removeAll()
+        board.evidences.removeAll()
+        board.cellRatings.removeAll()
+        for h in template.sortedHypotheses {
+            board.hypotheses.append(Hypothesis(
+                name: h.name,
+                colorHex: h.colorHex,
+                sortOrder: h.sortOrder,
+                falsifier: h.falsifier
+            ))
+        }
+        // One blank evidence slot to invite a first observation
+        board.evidences.append(Evidence(sortOrder: 0))
+        return board
     }
 
     private func createNewBoard() {
@@ -149,6 +200,29 @@ struct ContentView: View {
         if wasActive {
             activeBoard = boards.first(where: { $0.id != board.id })
         }
+    }
+
+    /// Save a copy of the current board as a reusable template — preserves the
+    /// hypothesis structure (and falsifiers) but strips the question, evidence,
+    /// ratings, conclusion, and calibration. Templates appear above the starter
+    /// archetypes in the example picker.
+    private func saveAsTemplate(_ source: Board) {
+        let template = Board(question: "")
+        template.isTemplate = true
+        template.templateName = source.question.isEmpty ? "Untitled template" : String(source.question.prefix(40))
+        // Replace blank scaffolding with copies of the source hypotheses
+        template.hypotheses.removeAll()
+        template.evidences.removeAll()
+        template.cellRatings.removeAll()
+        for h in source.sortedHypotheses {
+            template.hypotheses.append(Hypothesis(
+                name: h.name,
+                colorHex: h.colorHex,
+                sortOrder: h.sortOrder,
+                falsifier: h.falsifier
+            ))
+        }
+        context.insert(template)
     }
 }
 
@@ -521,6 +595,23 @@ struct OnboardingView: View {
 struct ExamplePickerView: View {
     let onPick: (ExampleArchetype) -> Void
     let onSkip: () -> Void
+    let onPickTemplate: ((Board) -> Void)?
+    let onAISeed: (() -> Void)?
+    let templates: [Board]
+
+    init(
+        onPick: @escaping (ExampleArchetype) -> Void,
+        onSkip: @escaping () -> Void,
+        onPickTemplate: ((Board) -> Void)? = nil,
+        onAISeed: (() -> Void)? = nil,
+        templates: [Board] = []
+    ) {
+        self.onPick = onPick
+        self.onSkip = onSkip
+        self.onPickTemplate = onPickTemplate
+        self.onAISeed = onAISeed
+        self.templates = templates
+    }
 
     var body: some View {
         ZStack {
@@ -551,6 +642,43 @@ struct ExamplePickerView: View {
                             .padding(.horizontal, 24)
                     }
                     .padding(.top, 28)
+
+                    // AI seed card — full-width promoted CTA at the top
+                    if let onAISeed {
+                        AISeedCard(onTap: onAISeed)
+                            .padding(.horizontal, 18)
+                    }
+
+                    // Saved user templates (if any)
+                    if !templates.isEmpty {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("YOUR TEMPLATES")
+                                .font(.system(size: 10, weight: .heavy))
+                                .tracking(1.4)
+                                .foregroundStyle(Theme.textDim)
+                                .padding(.horizontal, 22)
+                            LazyVGrid(
+                                columns: [GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14)],
+                                spacing: 14
+                            ) {
+                                ForEach(templates) { tpl in
+                                    TemplateCard(template: tpl) {
+                                        onPickTemplate?(tpl)
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 18)
+                        }
+                    }
+
+                    if !templates.isEmpty {
+                        Text("STARTER ARCHETYPES")
+                            .font(.system(size: 10, weight: .heavy))
+                            .tracking(1.4)
+                            .foregroundStyle(Theme.textDim)
+                            .padding(.horizontal, 22)
+                            .padding(.top, 4)
+                    }
 
                     LazyVGrid(
                         columns: [GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14)],
@@ -638,6 +766,419 @@ private struct ArchetypeCard: View {
         .buttonStyle(.plain)
         .onLongPressGesture(minimumDuration: 0, maximumDistance: 80, perform: {}) { isPressing in
             pressed = isPressing
+        }
+    }
+}
+
+// MARK: - AI Seed Card
+
+private struct AISeedCard: View {
+    let onTap: () -> Void
+    @State private var pressed = false
+    @State private var sparklePulse = false
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 14) {
+                ZStack {
+                    Circle()
+                        .fill(Theme.accent.opacity(0.18))
+                        .frame(width: 56, height: 56)
+                        .blur(radius: 8)
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 24, weight: .semibold))
+                        .foregroundStyle(Theme.accent)
+                        .scaleEffect(sparklePulse ? 1.1 : 0.95)
+                        .animation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true), value: sparklePulse)
+                }
+                .frame(width: 56)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 6) {
+                        Text("Describe your situation")
+                            .font(.system(.subheadline, design: .rounded))
+                            .fontWeight(.heavy)
+                            .foregroundStyle(Theme.textPrimary)
+                        Text("BETA")
+                            .font(.system(size: 8, weight: .heavy))
+                            .tracking(1)
+                            .foregroundStyle(Color(hex: "0A0A12"))
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(Theme.accent, in: Capsule())
+                    }
+                    Text("Type a paragraph; on-device AI proposes hypotheses and observations.")
+                        .font(.caption)
+                        .foregroundStyle(Theme.textDim)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(Theme.accent)
+            }
+            .padding(16)
+            .background {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(.ultraThinMaterial.opacity(0.6))
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(LinearGradient(
+                            colors: [Theme.accent.opacity(0.18), Color.clear],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ))
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .strokeBorder(Theme.accent.opacity(0.42), lineWidth: 1)
+                }
+                .shadow(color: Theme.accent.opacity(pressed ? 0.4 : 0.22), radius: pressed ? 16 : 10, y: 3)
+            }
+            .scaleEffect(pressed ? 0.985 : 1)
+            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: pressed)
+        }
+        .buttonStyle(.plain)
+        .onLongPressGesture(minimumDuration: 0, maximumDistance: 80, perform: {}) { isPressing in
+            pressed = isPressing
+        }
+        .onAppear { sparklePulse = true }
+    }
+}
+
+// MARK: - Template Card
+
+private struct TemplateCard: View {
+    let template: Board
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            VStack(alignment: .leading, spacing: 12) {
+                Image(systemName: "tray.full")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(Theme.accent)
+                    .frame(height: 32)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(template.templateName.isEmpty ? "Saved template" : template.templateName)
+                        .font(.system(.subheadline, design: .rounded))
+                        .fontWeight(.heavy)
+                        .foregroundStyle(Theme.textPrimary)
+                        .lineLimit(2)
+                    Text("\(template.hypotheses.count) hypotheses pre-loaded")
+                        .font(.caption)
+                        .foregroundStyle(Theme.textDim)
+                        .italic()
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, minHeight: 130, alignment: .topLeading)
+            .background {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(.ultraThinMaterial.opacity(0.55))
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .strokeBorder(Theme.accent.opacity(0.25), lineWidth: 1)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - AI Seed View
+// On-device LLM (Apple FoundationModels, iOS 26+) takes a paragraph describing a
+// situation and proposes 3-4 hypotheses + 4-5 weighted observations + initial cell
+// ratings. The user reviews + confirms — what they get is an editable starter board,
+// not an authoritative verdict.
+//
+// Privacy: nothing leaves the device. The model runs locally on Apple Intelligence
+// hardware. On older devices the feature shows an unavailable state instead of
+// silently degrading.
+
+import FoundationModels
+
+struct AISeedView: View {
+    let onAccept: (Board) -> Void
+    let onCancel: () -> Void
+
+    @State private var prompt: String = ""
+    @State private var isThinking = false
+    @State private var result: Board?
+    @State private var errorMessage: String?
+    @FocusState private var promptFocused: Bool
+
+    var body: some View {
+        ZStack {
+            Color(hex: "0A0A12").ignoresSafeArea()
+            RadialGradient(colors: [Color(hex: "1A1426").opacity(0.55), .clear],
+                           center: .topLeading, startRadius: 0, endRadius: 600)
+                .ignoresSafeArea()
+            StarfieldView(starCount: 110, seed: 91)
+                .ignoresSafeArea()
+
+            VStack(alignment: .leading, spacing: 18) {
+                HStack {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 22))
+                        .foregroundStyle(Theme.accent)
+                    Text("Describe your situation")
+                        .font(.system(.title2, design: .rounded))
+                        .fontWeight(.heavy)
+                        .foregroundStyle(Theme.textPrimary)
+                    Spacer()
+                    Button("Cancel") { onCancel() }
+                        .foregroundStyle(Theme.textDim)
+                }
+                .padding(.top, 12)
+
+                Text("A paragraph or two. Mention the question, what you've already considered, and any evidence on hand. The model proposes a starting matrix — you'll edit before saving.")
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.textDim)
+                    .lineSpacing(2)
+
+                TextEditor(text: $prompt)
+                    .font(.system(.body, design: .rounded))
+                    .scrollContentBackground(.hidden)
+                    .foregroundStyle(Theme.textPrimary)
+                    .focused($promptFocused)
+                    .padding(12)
+                    .frame(minHeight: 160, maxHeight: 240)
+                    .background(Color.white.opacity(0.03), in: RoundedRectangle(cornerRadius: 14))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .strokeBorder(promptFocused ? Theme.accent.opacity(0.5) : Theme.border, lineWidth: 1)
+                    )
+
+                if let err = errorMessage {
+                    Text(err)
+                        .font(.caption)
+                        .foregroundStyle(Theme.negative)
+                }
+
+                if let board = result {
+                    seedPreview(board: board)
+                }
+
+                Spacer()
+
+                primaryButton
+                    .padding(.bottom, 24)
+            }
+            .padding(.horizontal, 22)
+        }
+        .preferredColorScheme(.dark)
+    }
+
+    private var primaryButton: some View {
+        Button {
+            if let board = result {
+                onAccept(board)
+            } else {
+                Task { await runSeed() }
+            }
+        } label: {
+            HStack(spacing: 8) {
+                if isThinking {
+                    ProgressView().tint(Color(hex: "0A0A12"))
+                } else {
+                    Image(systemName: result == nil ? "sparkles" : "checkmark")
+                        .font(.system(size: 12, weight: .bold))
+                }
+                Text(isThinking ? "Reading the sky…" : (result == nil ? "Generate matrix" : "Use this board"))
+                    .font(.system(.body, design: .rounded))
+                    .fontWeight(.bold)
+            }
+            .foregroundStyle(Color(hex: "0A0A12"))
+            .padding(.horizontal, 28)
+            .padding(.vertical, 14)
+            .frame(maxWidth: .infinity)
+            .background(Theme.accentGradient, in: Capsule())
+            .opacity(prompt.trimmingCharacters(in: .whitespaces).count < 10 && result == nil ? 0.4 : 1)
+        }
+        .disabled(prompt.trimmingCharacters(in: .whitespaces).count < 10 && result == nil)
+    }
+
+    private func seedPreview(board: Board) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("PROPOSED MATRIX")
+                .font(.system(size: 9, weight: .heavy))
+                .tracking(1.4)
+                .foregroundStyle(Theme.accent.opacity(0.85))
+            Text(board.question.isEmpty ? "(no question)" : board.question)
+                .font(.system(.subheadline, design: .rounded))
+                .fontWeight(.semibold)
+                .foregroundStyle(Theme.textPrimary)
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(board.sortedHypotheses) { h in
+                    HStack(spacing: 6) {
+                        Image(systemName: "star.fill")
+                            .font(.system(size: 9))
+                            .foregroundStyle(h.color)
+                        Text(h.name)
+                            .font(.caption)
+                            .foregroundStyle(Theme.textSecondary)
+                    }
+                }
+            }
+            Text("\(board.evidences.count) observations · \(board.cellRatings.count) initial sightlines")
+                .font(.caption2)
+                .foregroundStyle(Theme.textDim)
+        }
+        .padding(14)
+        .background(Color.white.opacity(0.025), in: RoundedRectangle(cornerRadius: 14))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .strokeBorder(Theme.accent.opacity(0.18), lineWidth: 1)
+        )
+    }
+
+    @MainActor
+    private func runSeed() async {
+        errorMessage = nil
+        result = nil
+        isThinking = true
+        defer { isThinking = false }
+
+        guard #available(iOS 26.0, *) else {
+            errorMessage = "On-device AI requires iOS 26 or later."
+            return
+        }
+
+        let availability = SystemLanguageModel.default.availability
+        if case .unavailable(let reason) = availability {
+            errorMessage = "Apple Intelligence isn't available on this device (\(reason)). Try a different starter example."
+            return
+        }
+
+        let session = LanguageModelSession(instructions: """
+        You help users build a Reckon matrix using the Analysis of Competing Hypotheses (ACH) method.
+        Given a user's situation, output STRICT JSON in this shape and nothing else:
+        {
+          "question": "the central question to investigate",
+          "hypotheses": ["3 to 4 distinct competing explanations"],
+          "evidence": [
+            {
+              "text": "one piece of observable evidence",
+              "credibility": "high" | "medium" | "low",
+              "relevance":   "high" | "medium" | "low"
+            }
+          ],
+          "ratings": [
+            {
+              "evidence": <0-based index>,
+              "hypothesis": <0-based index>,
+              "rating": "stronglySupports" | "supports" | "irrelevant" | "contradicts" | "stronglyContradicts"
+            }
+          ]
+        }
+        Rules:
+        - Hypotheses MUST be genuinely competing, not minor variations.
+        - Include at least one hypothesis that runs counter to what the user seems to expect.
+        - Evidence should be observable, specific, and short.
+        - Provide ratings that demonstrate refutation-first thinking — not all positive.
+        - 3-4 hypotheses, 4-5 evidence, 6-10 ratings.
+        - Output ONLY the JSON. No prose.
+        """)
+
+        do {
+            let response = try await session.respond(to: "Situation:\n\n\(prompt)")
+            guard let board = parseSeedJSON(response.content) else {
+                errorMessage = "The model returned something I couldn't parse. Try rephrasing your paragraph."
+                return
+            }
+            result = board
+        } catch {
+            errorMessage = "Couldn't generate a matrix: \(error.localizedDescription)"
+        }
+    }
+
+    /// Parse the LLM's strict JSON response into a Board. Tolerant of stray text
+    /// before/after the JSON block.
+    private func parseSeedJSON(_ raw: String) -> Board? {
+        // Find the first { and the matching last }
+        guard let start = raw.firstIndex(of: "{"),
+              let end = raw.lastIndex(of: "}") else { return nil }
+        let jsonText = String(raw[start...end])
+        guard let data = jsonText.data(using: .utf8) else { return nil }
+
+        struct SeedJSON: Decodable {
+            let question: String
+            let hypotheses: [String]
+            let evidence: [SeedEvidence]
+            let ratings: [SeedRating]
+        }
+        struct SeedEvidence: Decodable {
+            let text: String
+            let credibility: String
+            let relevance: String
+        }
+        struct SeedRating: Decodable {
+            let evidence: Int
+            let hypothesis: Int
+            let rating: String
+        }
+
+        guard let seed = try? JSONDecoder().decode(SeedJSON.self, from: data) else { return nil }
+
+        let board = Board(question: seed.question)
+        board.hypotheses.removeAll()
+        board.evidences.removeAll()
+        board.cellRatings.removeAll()
+
+        let colors = HypothesisColors.all
+        var hypArr: [Hypothesis] = []
+        for (i, name) in seed.hypotheses.prefix(7).enumerated() {
+            let h = Hypothesis(name: name, colorHex: colors[i % colors.count], sortOrder: i)
+            board.hypotheses.append(h)
+            hypArr.append(h)
+        }
+
+        var evArr: [Evidence] = []
+        for (i, ev) in seed.evidence.prefix(8).enumerated() {
+            let cred = parseWeight(ev.credibility) ?? .medium
+            let rel = parseWeight(ev.relevance) ?? .medium
+            let e = Evidence(text: ev.text, credibility: cred, relevance: rel, sortOrder: i)
+            board.evidences.append(e)
+            evArr.append(e)
+        }
+
+        for r in seed.ratings {
+            guard r.evidence >= 0, r.evidence < evArr.count,
+                  r.hypothesis >= 0, r.hypothesis < hypArr.count,
+                  let rating = Rating(rawValue: r.rating) ?? Rating.named(r.rating)
+            else { continue }
+            board.cellRatings.append(CellRating(
+                evidenceID: evArr[r.evidence].id,
+                hypothesisID: hypArr[r.hypothesis].id,
+                rating: rating
+            ))
+        }
+
+        return board
+    }
+
+    private func parseWeight(_ s: String) -> Weight? {
+        switch s.lowercased() {
+        case "high", "h": return .high
+        case "medium", "med", "m": return .medium
+        case "low", "l": return .low
+        default: return nil
+        }
+    }
+}
+
+// Convenience: parse Rating by enum case name (the JSON uses case names, not raw values).
+extension Rating {
+    static func named(_ s: String) -> Rating? {
+        switch s {
+        case "stronglySupports":    return .stronglySupports
+        case "supports":            return .supports
+        case "irrelevant":          return .irrelevant
+        case "contradicts":         return .contradicts
+        case "stronglyContradicts": return .stronglyContradicts
+        default: return nil
         }
     }
 }

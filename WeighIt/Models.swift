@@ -144,13 +144,20 @@ final class Hypothesis {
     var colorHex: String
     var isRuledOut: Bool
     var sortOrder: Int
+    /// Pre-commitment falsifier: what observation would prove this hypothesis wrong?
+    /// Asked at hypothesis creation time. At verdict time, the app shows whether the
+    /// stated falsifier actually showed up in evidence — surfacing the structural
+    /// difference between reasoning (committing to falsifiers up front) and
+    /// rationalization (adjusting standards to fit conclusions).
+    var falsifier: String
 
-    init(name: String = "", colorHex: String = "EF8B6E", sortOrder: Int = 0) {
+    init(name: String = "", colorHex: String = "EF8B6E", sortOrder: Int = 0, falsifier: String = "") {
         self.id = UUID()
         self.name = name
         self.colorHex = colorHex
         self.isRuledOut = false
         self.sortOrder = sortOrder
+        self.falsifier = falsifier
     }
 
     var color: Color { Color(hex: colorHex) }
@@ -212,6 +219,20 @@ final class Board {
     var createdAt: Date
     var updatedAt: Date
 
+    /// Calibration: when the user finalizes their conclusion, ask them how confident
+    /// they are (0-100) and when they want to check whether they were right. Lets
+    /// the app surface a per-user calibration curve over time across many boards.
+    var confidence: Int?            // 0...100, set when conclusion is locked
+    var checkInDate: Date?           // user-set reminder date for outcome review
+    var actualOutcome: String        // filled in at check-in: what actually happened
+    var outcomeAccuracy: Int?        // user's self-rating: was the leading hypothesis right? (0...100)
+    var outcomeReviewedAt: Date?     // when the user actually came back
+
+    /// Whether this board is a template — a reusable hypothesis structure with no
+    /// real ratings. Templates appear above starter archetypes in the picker.
+    var isTemplate: Bool
+    var templateName: String
+
     @Relationship(deleteRule: .cascade) var hypotheses: [Hypothesis]
     @Relationship(deleteRule: .cascade) var evidences: [Evidence]
     @Relationship(deleteRule: .cascade) var cellRatings: [CellRating]
@@ -222,6 +243,13 @@ final class Board {
         self.conclusion = ""
         self.createdAt = Date()
         self.updatedAt = Date()
+        self.confidence = nil
+        self.checkInDate = nil
+        self.actualOutcome = ""
+        self.outcomeAccuracy = nil
+        self.outcomeReviewedAt = nil
+        self.isTemplate = false
+        self.templateName = ""
         self.hypotheses = []
         self.evidences = []
         self.cellRatings = []
