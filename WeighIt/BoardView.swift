@@ -79,7 +79,7 @@ struct BoardView: View {
 
     private var questionSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionLabel(text: "The question", icon: "questionmark.circle")
+            SectionLabel(text: plainEnglishMode ? "Question" : "The question", icon: "questionmark.circle")
             TextField("e.g. Why are signups dropping?", text: $board.question, axis: .vertical)
                 .font(.system(.title3, design: .rounded))
                 .fontWeight(.semibold)
@@ -93,14 +93,15 @@ struct BoardView: View {
     // MARK: - Hypotheses
 
     @AppStorage("strictBayesMode") private var strictBayesMode = false
+    @AppStorage("plainEnglishMode") private var plainEnglishMode = false
 
     private var hypothesesSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    SectionLabel(text: "Stars to test", icon: "star")
+                    SectionLabel(text: plainEnglishMode ? "Hypotheses" : "Stars to test", icon: "star")
                     Text(strictBayesMode
-                         ? "Set a prior, then watch the posterior update with each observation."
+                         ? "Set a prior, then watch the posterior update with each \(plainEnglishMode ? "rating" : "observation")."
                          : "Each candidate explanation. Ranked by what hasn't been knocked down.")
                         .font(.caption)
                         .foregroundStyle(Theme.textDim)
@@ -119,7 +120,7 @@ struct BoardView: View {
                             board.hypotheses.append(h)
                         }
                     } label: {
-                        addPillLabel("Add a star", systemImage: "plus")
+                        addPillLabel(plainEnglishMode ? "Add hypothesis" : "Add a star", systemImage: "plus")
                     }
                 }
             }
@@ -194,8 +195,11 @@ struct BoardView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    SectionLabel(text: "Observation log", icon: "binoculars")
-                    Text("Each piece of evidence is one observation. Sky × view is your condition.")
+                    SectionLabel(text: plainEnglishMode ? "Evidence" : "Observation log",
+                                 icon: plainEnglishMode ? "doc.text" : "binoculars")
+                    Text(plainEnglishMode
+                         ? "Each piece of evidence weighted by trust × relevance."
+                         : "Each piece of evidence is one observation. Sky × view is your condition.")
                         .font(.caption)
                         .foregroundStyle(Theme.textDim)
                         .fixedSize(horizontal: false, vertical: true)
@@ -208,7 +212,8 @@ struct BoardView: View {
                         board.evidences.append(ev)
                     }
                 } label: {
-                    addPillLabel("Log observation", systemImage: "binoculars")
+                    addPillLabel(plainEnglishMode ? "Add evidence" : "Log observation",
+                                 systemImage: plainEnglishMode ? "plus" : "binoculars")
                 }
             }
 
@@ -241,8 +246,11 @@ struct BoardView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    SectionLabel(text: "The star chart", icon: "scope")
-                    Text("Each cell is one sightline. Empty cells pulse — unobserved.")
+                    SectionLabel(text: plainEnglishMode ? "Matrix" : "The star chart",
+                                 icon: plainEnglishMode ? "tablecells" : "scope")
+                    Text(plainEnglishMode
+                         ? "Tap any cell to rate that evidence against that hypothesis. Empty cells pulse."
+                         : "Each cell is one sightline. Empty cells pulse — unobserved.")
                         .font(.caption)
                         .foregroundStyle(Theme.textDim)
                         .fixedSize(horizontal: false, vertical: true)
@@ -319,7 +327,9 @@ struct BoardView: View {
                     Image(systemName: "sparkle")
                         .font(.system(size: 13, weight: .semibold))
                 }
-                Text(showResults ? "Hide constellation" : "Confirm the constellation")
+                Text(showResults
+                 ? (plainEnglishMode ? "Hide ranking" : "Hide constellation")
+                 : (plainEnglishMode ? "See ranking" : "Confirm the constellation"))
                     .font(.system(.body, design: .rounded))
                     .fontWeight(.semibold)
                 if !showResults {
@@ -352,8 +362,10 @@ struct BoardView: View {
 
     private var conclusionSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            SectionLabel(text: "Your verdict", icon: "checkmark.seal")
-            Text("Based on the constellation, what do you think?")
+            SectionLabel(text: plainEnglishMode ? "Conclusion" : "Your verdict", icon: "checkmark.seal")
+            Text(plainEnglishMode
+                 ? "Based on the evidence, what do you think?"
+                 : "Based on the constellation, what do you think?")
                 .font(.caption)
                 .foregroundStyle(Theme.textDim)
                 .italic()

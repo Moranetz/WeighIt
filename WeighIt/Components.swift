@@ -11,6 +11,7 @@ struct HypothesisRow: View {
     @State private var starPulse = false
     @State private var falsifierExpanded = false
     @State private var showSteelmanSheet = false
+    @AppStorage("plainEnglishMode") private var plainEnglishMode = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -61,12 +62,14 @@ struct HypothesisRow: View {
             .onAppear { starPulse = true }
 
             if hypothesis.isRuledOut {
-                Text(hypothesis.name.isEmpty ? "Star" : hypothesis.name)
+                Text(hypothesis.name.isEmpty ? (plainEnglishMode ? "Hypothesis" : "Star") : hypothesis.name)
                     .font(.system(.subheadline, design: .rounded))
                     .foregroundStyle(Theme.textSecondary)
                     .strikethrough()
             } else {
-                TextField("Name this star…", text: $hypothesis.name, axis: .vertical)
+                TextField(plainEnglishMode ? "Name this hypothesis…" : "Name this star…",
+                          text: $hypothesis.name,
+                          axis: .vertical)
                     .font(.system(.subheadline, design: .rounded))
                     .fontWeight(.medium)
                     .foregroundStyle(Theme.textPrimary)
@@ -231,6 +234,7 @@ struct EvidenceRow: View {
     let onMoveDown: () -> Void
     let isFirst: Bool
     let isLast: Bool
+    @AppStorage("plainEnglishMode") private var plainEnglishMode = false
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
@@ -265,14 +269,18 @@ struct EvidenceRow: View {
                     .lineLimit(1...3)
 
                 HStack(spacing: 10) {
-                    WeightPicker(label: "sky", kind: .sky, value: Binding(
-                        get: { evidence.credWeight },
-                        set: { evidence.credibility = $0.rawValue }
-                    ))
-                    WeightPicker(label: "view", kind: .sight, value: Binding(
-                        get: { evidence.relWeight },
-                        set: { evidence.relevance = $0.rawValue }
-                    ))
+                    WeightPicker(label: plainEnglishMode ? "trust" : "sky",
+                                 kind: plainEnglishMode ? .raw : .sky,
+                                 value: Binding(
+                                    get: { evidence.credWeight },
+                                    set: { evidence.credibility = $0.rawValue }
+                                 ))
+                    WeightPicker(label: plainEnglishMode ? "rel." : "view",
+                                 kind: plainEnglishMode ? .raw : .sight,
+                                 value: Binding(
+                                    get: { evidence.relWeight },
+                                    set: { evidence.relevance = $0.rawValue }
+                                 ))
                 }
             }
 
@@ -418,6 +426,7 @@ struct SteelmanSheet: View {
     @Bindable var hypothesis: Hypothesis
     let onSaveAndDim: () -> Void
     let onCancel: () -> Void
+    @AppStorage("plainEnglishMode") private var plainEnglishMode = false
 
     var body: some View {
         ZStack {
@@ -434,11 +443,13 @@ struct SteelmanSheet: View {
                         .font(.system(size: 24))
                         .foregroundStyle(Theme.accent)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Before you dim this star")
+                        Text(plainEnglishMode ? "Before you rule this out" : "Before you dim this star")
                             .font(.system(.title3, design: .rounded))
                             .fontWeight(.heavy)
                             .foregroundStyle(Theme.textPrimary)
-                        Text(hypothesis.name.isEmpty ? "(unnamed star)" : hypothesis.name)
+                        Text(hypothesis.name.isEmpty
+                             ? (plainEnglishMode ? "(unnamed hypothesis)" : "(unnamed star)")
+                             : hypothesis.name)
                             .font(.subheadline)
                             .foregroundStyle(Theme.textSecondary)
                             .lineLimit(2)
@@ -466,7 +477,7 @@ struct SteelmanSheet: View {
 
                 HStack(spacing: 10) {
                     Button { onCancel() } label: {
-                        Text("Keep it lit")
+                        Text(plainEnglishMode ? "Keep it" : "Keep it lit")
                             .font(.system(.subheadline, design: .rounded))
                             .fontWeight(.semibold)
                             .foregroundStyle(Theme.textSecondary)
@@ -481,7 +492,7 @@ struct SteelmanSheet: View {
                         HStack(spacing: 6) {
                             Image(systemName: "moon.stars")
                                 .font(.system(size: 11, weight: .bold))
-                            Text("Save & dim")
+                            Text(plainEnglishMode ? "Save & rule out" : "Save & dim")
                                 .font(.system(.subheadline, design: .rounded))
                                 .fontWeight(.bold)
                         }
