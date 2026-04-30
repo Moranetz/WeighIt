@@ -679,6 +679,7 @@ final class Board {
 
     private func setupExample(_ archetype: ExampleArchetype = .founder) {
         switch archetype {
+        case .tutorial:       setupTutorialExample()
         case .shortseller:    setupShortsellerExample()
         case .founder:        setupFounderExample()
         case .scientist:      setupScientistExample()
@@ -686,6 +687,35 @@ final class Board {
         case .lifeDecision:   setupLifeDecisionExample()
         case .diagnostician:  setupDiagnosticianExample()
         }
+    }
+
+    // MARK: Tutorial — bare-bones first-time example
+    // 2 hypotheses, 2 evidence, 2 cells pre-rated (to demonstrate the structure)
+    // and 2 cells empty (so the user gets to try rating themselves). Question is
+    // a small, relatable everyday call so the user isn't intimidated by the topic
+    // before they've understood the matrix.
+
+    private func setupTutorialExample() {
+        question = "Should I work out today or rest?"
+        let colors = HypothesisColors.all
+
+        let h1 = Hypothesis(name: "Work out — long-term gains worth it", colorHex: colors[0], sortOrder: 0)
+        let h2 = Hypothesis(name: "Rest — body needs recovery", colorHex: colors[1], sortOrder: 1)
+        hypotheses = [h1, h2]
+
+        let e1 = Evidence(text: "Slept poorly last night (5 hours)", credibility: .high, relevance: .high, sortOrder: 0)
+        let e2 = Evidence(text: "Have an event tomorrow needing energy", credibility: .high, relevance: .high, sortOrder: 1)
+        evidences = [e1, e2]
+
+        // 2 cells pre-rated to demonstrate the structure; the other 2 cells are
+        // intentionally empty so the user gets to do their first ratings themselves.
+        cellRatings = [
+            CellRating(evidenceID: e1.id, hypothesisID: h1.id, rating: .contradicts,
+                       note: "Bad sleep makes a hard workout less productive."),
+            CellRating(evidenceID: e1.id, hypothesisID: h2.id, rating: .supports,
+                       note: "Recovery sleep would help."),
+            // e2 vs h1, e2 vs h2 left empty for user to rate
+        ]
     }
 
     // MARK: Founder / product example
@@ -883,6 +913,7 @@ final class Board {
 // MARK: - Example Archetypes
 
 enum ExampleArchetype: String, CaseIterable, Identifiable {
+    case tutorial       = "tutorial"
     case shortseller    = "shortseller"
     case founder        = "founder"
     case scientist      = "scientist"
@@ -894,6 +925,7 @@ enum ExampleArchetype: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
+        case .tutorial:      "Quick tour"
         case .shortseller:   "The shortseller"
         case .founder:       "The founder"
         case .scientist:     "The researcher"
@@ -905,6 +937,7 @@ enum ExampleArchetype: String, CaseIterable, Identifiable {
 
     var subtitle: String {
         switch self {
+        case .tutorial:      "Start here if it's your first time"
         case .shortseller:   "Are these numbers real?"
         case .founder:       "Why didn't this work?"
         case .scientist:     "Why isn't this replicating?"
@@ -917,6 +950,7 @@ enum ExampleArchetype: String, CaseIterable, Identifiable {
     /// SF Symbol for the archetype card.
     var icon: String {
         switch self {
+        case .tutorial:      "graduationcap"
         case .shortseller:   "chart.line.downtrend.xyaxis"
         case .founder:       "rocket"
         case .scientist:     "atom"
@@ -930,6 +964,7 @@ enum ExampleArchetype: String, CaseIterable, Identifiable {
     /// aesthetic but gives each archetype a recognizable signal.
     var accentHex: String {
         switch self {
+        case .tutorial:      "F5C49A"  // warm gold — beginner-friendly
         case .shortseller:   "D4746A"  // alarm red — danger
         case .founder:       "EF8B6E"  // warm peach — building
         case .scientist:     "5CC4B8"  // teal — clarity
@@ -938,6 +973,9 @@ enum ExampleArchetype: String, CaseIterable, Identifiable {
         case .diagnostician: "6EC4A0"  // green — health
         }
     }
+
+    /// True for the tutorial — gets a special "START HERE" badge in the picker.
+    var isTutorial: Bool { self == .tutorial }
 }
 
 // MARK: - Colors

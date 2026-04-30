@@ -8,6 +8,7 @@ struct ContentView: View {
     @State private var activeBoard: Board?
     @State private var showBoardList = false
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
+    @AppStorage("hasCompletedTutorial") private var hasCompletedTutorial = false
     @AppStorage("strictBayesMode") private var strictBayesMode = false
     @AppStorage("plainEnglishMode") private var plainEnglishMode = false
     @State private var showOnboarding = false
@@ -125,15 +126,28 @@ struct ContentView: View {
             if !hasSeenOnboarding {
                 showOnboarding = true
             } else if boards.isEmpty {
-                // User completed onboarding previously but has no boards — show the picker
-                showExamplePicker = true
+                // First launch after onboarding: skip the picker entirely and drop the
+                // user straight into the Quick Tour. Less choice, less paralysis.
+                if !hasCompletedTutorial {
+                    let board = Board(archetype: .tutorial)
+                    context.insert(board)
+                    activeBoard = board
+                } else {
+                    showExamplePicker = true
+                }
             }
         }
         .onChange(of: showOnboarding) { _, newValue in
-            // When onboarding closes for the first time and no boards exist, present
-            // the example picker so the user lands on something tailored, not blank.
+            // When onboarding closes for the first time, the same first-launch logic:
+            // tutorial first, picker only after the user has seen the basics.
             if !newValue && boards.isEmpty {
-                showExamplePicker = true
+                if !hasCompletedTutorial {
+                    let board = Board(archetype: .tutorial)
+                    context.insert(board)
+                    activeBoard = board
+                } else {
+                    showExamplePicker = true
+                }
             }
         }
         .fullScreenCover(isPresented: $showOnboarding) {
@@ -817,10 +831,21 @@ private struct ArchetypeCard: View {
                 .frame(height: 52)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(archetype.title)
-                        .font(.system(.subheadline, design: .rounded))
-                        .fontWeight(.heavy)
-                        .foregroundStyle(Theme.textPrimary)
+                    HStack(spacing: 5) {
+                        Text(archetype.title)
+                            .font(.system(.subheadline, design: .rounded))
+                            .fontWeight(.heavy)
+                            .foregroundStyle(Theme.textPrimary)
+                        if archetype.isTutorial {
+                            Text("START HERE")
+                                .font(.system(size: 7.5, weight: .heavy))
+                                .tracking(0.8)
+                                .foregroundStyle(Color(hex: "0A0A12"))
+                                .padding(.horizontal, 4)
+                                .padding(.vertical, 2)
+                                .background(Color(hex: archetype.accentHex), in: Capsule())
+                        }
+                    }
                     Text(archetype.subtitle)
                         .font(.caption)
                         .foregroundStyle(Theme.textDim)

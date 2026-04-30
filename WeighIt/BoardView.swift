@@ -13,9 +13,22 @@ struct BoardView: View {
     private let successHaptic = UINotificationFeedbackGenerator()
     private let confettiDisplayDuration: Duration = .seconds(2.5)
 
+    @AppStorage("hasCompletedTutorial") private var hasCompletedTutorial = false
+
+    /// True if this board is the bare-bones first-time tutorial. Detected by
+    /// the question text since we don't have a flag on Board (avoiding a schema
+    /// migration just for this). The coachmark banner only shows on this board
+    /// AND only until the user marks the tutorial complete.
+    private var isTutorialBoard: Bool {
+        board.question == "Should I work out today or rest?"
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 22) {
+                if isTutorialBoard && !hasCompletedTutorial {
+                    tutorialCoachmark
+                }
 
                 // Question
                 questionSection
@@ -561,6 +574,77 @@ struct BoardView: View {
         .padding(.vertical, 5)
         .background(Theme.accent.opacity(0.10), in: Capsule())
         .overlay(Capsule().strokeBorder(Theme.accent.opacity(0.3), lineWidth: 1))
+    }
+
+    /// Tutorial coachmark — a friendly inline card at the top of the tutorial board
+    /// guiding the user through their first interactions. Auto-fades when dismissed.
+    /// Designed to read like a Steve Jobs welcome note, not a forced-march onboarding
+    /// overlay. The user can ignore it and the tutorial board still works as a normal board.
+    private var tutorialCoachmark: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Image(systemName: "graduationcap.fill")
+                    .font(.system(size: 14))
+                    .foregroundStyle(Color(hex: "F5C49A"))
+                Text("YOUR FIRST BOARD")
+                    .font(.system(size: 9, weight: .heavy))
+                    .tracking(1.4)
+                    .foregroundStyle(Color(hex: "F5C49A"))
+                Spacer()
+                Button {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+                        hasCompletedTutorial = true
+                    }
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 16))
+                        .foregroundStyle(Theme.textDim)
+                }
+                .buttonStyle(.plain)
+            }
+
+            Text("Two hypotheses. Two pieces of evidence. Two cells already rated.\nTry rating the empty cells in the matrix below — long-press a cell to cycle ratings, or tap to pick one.")
+                .font(.subheadline)
+                .foregroundStyle(Theme.textPrimary)
+                .lineSpacing(2)
+
+            Text("When you're done, tap \"\(plainEnglishMode ? "See ranking" : "Confirm the constellation")\" to see which hypothesis holds up.")
+                .font(.caption)
+                .italic()
+                .foregroundStyle(Theme.textDim)
+                .lineSpacing(2)
+
+            Button {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+                    hasCompletedTutorial = true
+                }
+            } label: {
+                Text("I've got it →")
+                    .font(.system(.subheadline, design: .rounded))
+                    .fontWeight(.bold)
+                    .foregroundStyle(Color(hex: "0A0A12"))
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 10)
+                    .background(Theme.accentGradient, in: Capsule())
+            }
+            .padding(.top, 4)
+        }
+        .padding(16)
+        .background {
+            ZStack {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(.ultraThinMaterial.opacity(0.7))
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(LinearGradient(
+                        colors: [Color(hex: "F5C49A").opacity(0.18), Color.clear],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ))
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .strokeBorder(Color(hex: "F5C49A").opacity(0.4), lineWidth: 1)
+            }
+            .shadow(color: Color(hex: "F5C49A").opacity(0.2), radius: 12)
+        }
     }
 
     private var footerView: some View {
