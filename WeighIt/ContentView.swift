@@ -24,14 +24,23 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // Calm work surface. One near-black ground, one extremely faint
-                // warm wash so the brand color carries through without flooding.
+                // Warm work surface. Chocolate-tinted ground with two
+                // confident chromatic washes — coral at top-leading, indigo
+                // at bottom-trailing. The page should feel ALIVE, like
+                // working under sunset light, not in a cave.
                 Theme.bg.ignoresSafeArea()
                 RadialGradient(
-                    colors: [Theme.accent.opacity(0.05), .clear],
-                    center: .top,
+                    colors: [Theme.accent.opacity(0.22), .clear],
+                    center: .topLeading,
                     startRadius: 0,
-                    endRadius: 420
+                    endRadius: 600
+                )
+                .ignoresSafeArea()
+                RadialGradient(
+                    colors: [Theme.accentSecondary.opacity(0.18), .clear],
+                    center: .bottomTrailing,
+                    startRadius: 0,
+                    endRadius: 600
                 )
                 .ignoresSafeArea()
 

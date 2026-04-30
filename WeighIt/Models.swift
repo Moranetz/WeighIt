@@ -981,7 +981,10 @@ enum ExampleArchetype: String, CaseIterable, Identifiable {
 // MARK: - Colors
 
 enum HypothesisColors {
-    static let all = ["EF8B6E", "5CC4B8", "7E9BE0", "E8C47A", "C490D4", "6EC4A0", "D4746A"]
+    // Vivid identity palette — saturated brights so each hypothesis has a
+    // distinct pattern-recognition anchor on the work surface. Coral, teal,
+    // indigo, mustard, violet, emerald, cherry.
+    static let all = ["FF6B47", "2DD4BF", "818CF8", "FBBF24", "C084FC", "34D399", "F87171"]
 }
 
 // MARK: - Color Extension

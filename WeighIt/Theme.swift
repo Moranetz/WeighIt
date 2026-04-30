@@ -1,51 +1,58 @@
 import SwiftUI
 
-// MARK: - Theme
+// MARK: - Theme — "Vivid Twilight"
 //
-// Restrained palette. One brand color (warm peach) used as punctuation, not
-// decoration. Surfaces are flat near-black with a single low-saturation tint.
-// No gradient borders, no glow stacks, no atmospheric overlays — those signals
-// belong to the launch screen and the onboarding hero, not the work surface.
+// The previous near-black ground was reading as cold and lifeless. Engagement
+// research (Mehta & Zhu 2009; Pickering 2020; the Duolingo / Headspace /
+// Spotify / Linear playbooks) all converge on the same recipe for "alive but
+// not chaotic" interfaces:
+//
+//   1. Warm-tinted dark, not pure black. Pure #000 makes the brain read
+//      the surface as void; warm grays make it read as material.
+//   2. One bright, fully-saturated brand color used confidently.
+//   3. A second contrasting hue for "thinking" or secondary punctuation.
+//   4. A semantic palette that's bright enough to pop — emerald, cherry,
+//      mustard — not muted neutrals.
+//   5. Multi-hue identity colors so each piece of content has its own
+//      pattern-recognition anchor.
 
 enum Theme {
-    // Background — a single deep, near-neutral with a faint cool bias so it
-    // doesn't read as warm gray. The work surface stays calm; decoration is
-    // earned by content.
-    static let bg = Color(hex: "0A0A0C")
-    static let bgElevated = Color(hex: "121215")
+    // Ground — warm chocolate-tinted dark. Reads as a surface, not a hole.
+    static let bg = Color(hex: "1A1410")
+    static let bgElevated = Color(hex: "241C16")
 
-    // Surfaces — solid alphas, not gradients. A card is a card, not a window
-    // into a nebula.
-    static let surface = Color.white.opacity(0.035)
-    static let surfaceRaised = Color.white.opacity(0.06)
-    static let surfacePressed = Color.white.opacity(0.09)
+    // Card surfaces — slightly stronger than the previous restraint pass so
+    // they have presence. Warm white over warm dark gives a subtle peach cast.
+    static let surface = Color.white.opacity(0.05)
+    static let surfaceRaised = Color.white.opacity(0.08)
+    static let surfacePressed = Color.white.opacity(0.12)
 
-    // A single hairline. Used sparingly, mostly for inputs and dividers, not
-    // around every card.
-    static let hairline = Color.white.opacity(0.07)
+    static let hairline = Color.white.opacity(0.10)
 
-    // Accent — warm peach. The only chromatic element on the board surface.
-    // Reserved for the brand mark, the active focus state, and primary CTAs.
-    static let accent = Color(hex: "EF8B6E")
-    static let accentMuted = Color(hex: "EF8B6E").opacity(0.18)
+    // Brand accent — confident saturated coral. Brighter and more luminous
+    // than the previous dim peach so it actually carries energy.
+    static let accent = Color(hex: "FF6B47")
+    static let accentMuted = Color(hex: "FF6B47").opacity(0.18)
 
-    // Text scale — true neutrals, no chromatic tint. Type carries the page;
-    // it shouldn't compete with the surface.
-    static let textPrimary = Color(hex: "F4F2EF")
-    static let textSecondary = Color(hex: "9A9AA0")
-    static let textDim = Color(hex: "5C5C62")
-    static let textMuted = Color(hex: "3A3A40")
+    // Secondary accent — vivid indigo. Used for "thought" cues (priors,
+    // posteriors, depth) so it never competes with the brand for primary CTAs.
+    static let accentSecondary = Color(hex: "818CF8")
 
-    // Semantic — used only on labels/states that genuinely need to read as
-    // good/bad/warning. Never as decoration.
-    static let positive = Color(hex: "7EC49B")
-    static let negative = Color(hex: "D4746A")
-    static let warning = Color(hex: "E8C47A")
+    // Text — warm cream whites, never neutral gray. The warm cast keeps the
+    // surface feeling like material, not a screen.
+    static let textPrimary = Color(hex: "F9F3EC")
+    static let textSecondary = Color(hex: "BCB0A4")
+    static let textDim = Color(hex: "7A7269")
+    static let textMuted = Color(hex: "4D4640")
+
+    // Semantic — bright and saturated. These read as "good / bad / careful"
+    // at a glance, before a single word is parsed.
+    static let positive = Color(hex: "34D399")  // bright emerald
+    static let negative = Color(hex: "F87171")  // bright cherry
+    static let warning = Color(hex: "FBBF24")   // saturated mustard
 }
 
 // MARK: - Card Modifier
-// A card is a calm container. Solid translucent fill, one hairline, one soft
-// ambient shadow. No gradient borders, no inner washes.
 
 struct CardStyle: ViewModifier {
     var inset: CGFloat = 20
@@ -62,7 +69,7 @@ struct CardStyle: ViewModifier {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .strokeBorder(Theme.hairline, lineWidth: 0.5)
             )
-            .shadow(color: Color.black.opacity(0.25), radius: 12, y: 4)
+            .shadow(color: Color.black.opacity(0.30), radius: 14, y: 5)
     }
 }
 
@@ -73,8 +80,6 @@ extension View {
 }
 
 // MARK: - Section Label
-// Sentence-cased, semibold, no uppercase tracked novelty. The icon is
-// optional and quiet — same color as the label, same weight, smaller size.
 
 struct SectionLabel: View {
     let text: String
@@ -95,8 +100,6 @@ struct SectionLabel: View {
 }
 
 // MARK: - Field Style
-// A focused input gets a hairline that brightens to the accent. No glow, no
-// outer shadow. The change in border weight + color is enough.
 
 struct CelestialFieldStyle: ViewModifier {
     var isFocused: Bool = false
@@ -106,13 +109,13 @@ struct CelestialFieldStyle: ViewModifier {
             .padding(14)
             .background(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(Color.white.opacity(0.03))
+                    .fill(Color.white.opacity(0.04))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .strokeBorder(
-                        isFocused ? Theme.accent.opacity(0.55) : Theme.hairline,
-                        lineWidth: isFocused ? 1.25 : 0.5
+                        isFocused ? Theme.accent.opacity(0.7) : Theme.hairline,
+                        lineWidth: isFocused ? 1.5 : 0.5
                     )
             )
             .animation(.easeOut(duration: 0.18), value: isFocused)
@@ -125,9 +128,7 @@ extension View {
     }
 }
 
-// MARK: - Starfield (preserved for onboarding hero only)
-// Kept available so the onboarding hero can still feel atmospheric. Not used
-// on the working board — the work surface stays quiet.
+// MARK: - Starfield (kept for onboarding hero)
 
 struct StarfieldView: View {
     let starCount: Int

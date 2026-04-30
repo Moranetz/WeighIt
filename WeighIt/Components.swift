@@ -120,12 +120,36 @@ struct HypothesisRow: View {
                 }
             }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Theme.surface)
-        )
+        .padding(.horizontal, 16)
+        .padding(.vertical, 13)
+        .background {
+            ZStack(alignment: .leading) {
+                // Solid surface with a faint hypothesis-color wash inside —
+                // each row reads as belonging to its own idea, not a generic
+                // input cell.
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Theme.surface)
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(LinearGradient(
+                        colors: [
+                            hypothesis.color.opacity(hypothesis.isRuledOut ? 0 : 0.10),
+                            .clear,
+                        ],
+                        startPoint: .leading,
+                        endPoint: .center
+                    ))
+                // Saturated identity ribbon at the leading edge.
+                HStack(spacing: 0) {
+                    Rectangle()
+                        .fill(hypothesis.color.opacity(hypothesis.isRuledOut ? 0.25 : 1))
+                        .frame(width: 4)
+                    Spacer()
+                }
+                .clipShape(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                )
+            }
+        }
         .opacity(hypothesis.isRuledOut ? 0.55 : 1)
     }
 
