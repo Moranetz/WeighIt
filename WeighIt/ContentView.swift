@@ -27,12 +27,15 @@ struct ContentView: View {
                 // Background — deep night sky. Layered: solid base, faint nebula glow,
                 // subtle starfield, atmospheric color washes. Reinforces the observatory
                 // metaphor at the perceptual level.
-                Color(hex: "0A0A12").ignoresSafeArea()
-                RadialGradient(colors: [Color(hex: "1A1426").opacity(0.6), .clear],
-                               center: .topLeading, startRadius: 0, endRadius: 600)
+                Color(hex: "0B0F1F").ignoresSafeArea()
+                RadialGradient(colors: [Color(hex: "2D2659").opacity(0.55), .clear],
+                               center: .topLeading, startRadius: 0, endRadius: 700)
                     .ignoresSafeArea()
-                RadialGradient(colors: [Color(hex: "0F2436").opacity(0.5), .clear],
-                               center: .bottomTrailing, startRadius: 0, endRadius: 500)
+                RadialGradient(colors: [Color(hex: "0F2436").opacity(0.45), .clear],
+                               center: .bottomTrailing, startRadius: 0, endRadius: 550)
+                    .ignoresSafeArea()
+                RadialGradient(colors: [Color(hex: "8B5CF6").opacity(0.10), .clear],
+                               center: UnitPoint(x: 0.85, y: 0.15), startRadius: 0, endRadius: 350)
                     .ignoresSafeArea()
                 StarfieldView(starCount: 90, seed: 47)
                     .ignoresSafeArea()
@@ -376,8 +379,8 @@ struct OnboardingView: View {
     var body: some View {
         ZStack {
             // Same starfield + night sky as the main app
-            Color(hex: "0A0A12").ignoresSafeArea()
-            RadialGradient(colors: [Color(hex: "1A1426").opacity(0.7), .clear],
+            Color(hex: "0B0F1F").ignoresSafeArea()
+            RadialGradient(colors: [Color(hex: "2D2659").opacity(0.7), .clear],
                            center: .topLeading, startRadius: 0, endRadius: 600)
                 .ignoresSafeArea()
             RadialGradient(colors: [Color(hex: "0F2436").opacity(0.6), .clear],
@@ -669,8 +672,8 @@ struct ExamplePickerView: View {
     var body: some View {
         ZStack {
             // Same observatory backdrop as onboarding — continuity matters.
-            Color(hex: "0A0A12").ignoresSafeArea()
-            RadialGradient(colors: [Color(hex: "1A1426").opacity(0.6), .clear],
+            Color(hex: "0B0F1F").ignoresSafeArea()
+            RadialGradient(colors: [Color(hex: "2D2659").opacity(0.6), .clear],
                            center: .topLeading, startRadius: 0, endRadius: 600)
                 .ignoresSafeArea()
             RadialGradient(colors: [Color(hex: "0F2436").opacity(0.5), .clear],
@@ -1028,8 +1031,8 @@ struct AISeedView: View {
 
     var body: some View {
         ZStack {
-            Color(hex: "0A0A12").ignoresSafeArea()
-            RadialGradient(colors: [Color(hex: "1A1426").opacity(0.55), .clear],
+            Color(hex: "0B0F1F").ignoresSafeArea()
+            RadialGradient(colors: [Color(hex: "2D2659").opacity(0.55), .clear],
                            center: .topLeading, startRadius: 0, endRadius: 600)
                 .ignoresSafeArea()
             StarfieldView(starCount: 110, seed: 91)
@@ -1367,7 +1370,7 @@ struct CalibrationView: View {
 
     var body: some View {
         ZStack {
-            Color(hex: "0A0A12").ignoresSafeArea()
+            Color(hex: "0B0F1F").ignoresSafeArea()
             StarfieldView(starCount: 60, seed: 73)
                 .ignoresSafeArea()
 

@@ -1,29 +1,52 @@
 import SwiftUI
 
 enum Theme {
-    // Backgrounds
-    static let bg = Color(hex: "111014")
-    static let surface = Color.white.opacity(0.03)
-    static let raised = Color.white.opacity(0.05)
-    static let hover = Color.white.opacity(0.08)
+    // Backgrounds — deep night sky with indigo/navy/black layered gradient.
+    // Reflects the established palette in melmarion/figma-design-library
+    // (Vynora, Glow-card): radial indigo → navy → black, not flat gray.
+    static let bg = Color(hex: "0B0F1F")          // deep midnight, slight blue
+    static let bgDeep = Color(hex: "050811")       // near-black for outer edges
+    static let bgIndigo = Color(hex: "1F1A40")     // indigo nebula tint
+    static let bgViolet = Color(hex: "2D2659")     // violet halo accent
+
+    static let surface = Color.white.opacity(0.025)
+    static let raised = Color.white.opacity(0.045)
+    static let hover = Color.white.opacity(0.075)
 
     // Borders
-    static let border = Color.white.opacity(0.06)
-    static let borderLight = Color.white.opacity(0.10)
+    static let border = Color.white.opacity(0.07)
+    static let borderLight = Color.white.opacity(0.12)
 
-    // Accent
-    static let accent = Color(hex: "EF8B6E")
-    static let accentSecondary = Color(hex: "E8C47A")
+    // Accent — warm amber primary (matches app icon and brand) with a cool
+    // violet secondary for "thinking depth" cues. Gradient mixes both for
+    // richer card edges and hero highlights.
+    static let accent = Color(hex: "EF8B6E")              // primary warm peach
+    static let accentSecondary = Color(hex: "F5C49A")     // warm gold
+    static let accentCool = Color(hex: "B89BFF")          // soft violet — thinking / depth
+    static let accentDeep = Color(hex: "8B5CF6")          // violet-500 from figma library
     static let accentGradient = LinearGradient(
-        colors: [Color(hex: "EF8B6E"), Color(hex: "E8C47A")],
+        colors: [Color(hex: "EF8B6E"), Color(hex: "F5C49A")],
         startPoint: .topLeading, endPoint: .bottomTrailing
     )
+    /// Cool-warm border gradient — used on card edges. Adds atmospheric depth
+    /// (echoes the Vynora/Glow-card pattern of conic violet gradients) without
+    /// making the warm brand feel cold.
+    static let cardEdgeGradient = LinearGradient(
+        colors: [
+            Color(hex: "EF8B6E").opacity(0.30),
+            Color(hex: "B89BFF").opacity(0.18),
+            Color.white.opacity(0.04),
+            Color(hex: "EF8B6E").opacity(0.10),
+        ],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
 
-    // Text
+    // Text — slightly cooler whites to fit the bluer background
     static let textPrimary = Color(hex: "F0EBE6")
-    static let textSecondary = Color(hex: "9A928A")
-    static let textDim = Color(hex: "5A544E")
-    static let textMuted = Color(hex: "3A3530")
+    static let textSecondary = Color(hex: "A099B0")    // slight violet tint
+    static let textDim = Color(hex: "5E5870")
+    static let textMuted = Color(hex: "3D3850")
 
     // Semantic
     static let positive = Color(hex: "7EC49B")
@@ -31,9 +54,9 @@ enum Theme {
     static let warning = Color(hex: "E8C47A")
 
     // Card style
-    static let cardBackground = Color.white.opacity(0.03)
-    static let cardBorder = Color.white.opacity(0.06)
-    static let cardShadow = Color.black.opacity(0.12)
+    static let cardBackground = Color.white.opacity(0.022)
+    static let cardBorder = Color(hex: "B89BFF").opacity(0.18)  // violet hint, like glow-card
+    static let cardShadow = Color.black.opacity(0.18)
 }
 
 // MARK: - Card Modifier
@@ -50,36 +73,30 @@ struct CardStyle: ViewModifier {
                 ZStack {
                     // Glass layer — very thin, lets the starfield shimmer through.
                     RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .fill(.ultraThinMaterial.opacity(0.55))
+                        .fill(.ultraThinMaterial.opacity(0.50))
 
-                    // Subtle vertical gradient — slightly darker at the top, like a
-                    // cloud lit from below. Adds dimension without opacity.
+                    // Soft indigo→violet wash inside the card. Echoes the figma-library
+                    // atmospheric components (Vynora) where dark surfaces have a faint
+                    // colored interior glow rather than being neutral gray.
                     RoundedRectangle(cornerRadius: 22, style: .continuous)
                         .fill(LinearGradient(
                             colors: [
-                                Color.white.opacity(0.015),
-                                Color.white.opacity(0.045),
+                                Color(hex: "1F1A40").opacity(0.18),
+                                Color.white.opacity(0.02),
+                                Color(hex: "0B0F1F").opacity(0.10),
                             ],
-                            startPoint: .top, endPoint: .bottom
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
                         ))
 
-                    // A soft warm glint along the top edge — light catching on a
-                    // distant lens. Anchors the celestial mood.
+                    // Cool-warm gradient border — peach top-left fading through violet
+                    // to peach bottom-right. Pulls the brand warmth in without losing
+                    // the contemplative cool register.
                     RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .strokeBorder(
-                            LinearGradient(
-                                colors: [
-                                    Theme.accent.opacity(0.18),
-                                    Color.white.opacity(0.04),
-                                    Theme.accent.opacity(0.04),
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 1
-                        )
+                        .strokeBorder(Theme.cardEdgeGradient, lineWidth: 1)
                 }
-                .shadow(color: Color.black.opacity(0.18), radius: 14, y: 4)
+                .shadow(color: Color(hex: "8B5CF6").opacity(0.10), radius: 18, y: 6)
+                .shadow(color: Color.black.opacity(0.30), radius: 8, y: 2)
             }
     }
 }
