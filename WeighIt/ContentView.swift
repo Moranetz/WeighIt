@@ -448,7 +448,7 @@ struct OnboardingView: View {
                         .foregroundStyle(Color(hex: "0A0A12"))
                         .padding(.horizontal, 40)
                         .padding(.vertical, 16)
-                        .background(Theme.accent, in: RoundedRectangle(cornerRadius: 14))
+                        .background(Theme.accent, in: RoundedRectangle(cornerRadius: 14)).primaryCTAGlow()
                         .shadow(color: Theme.accent.opacity(0.4), radius: 12, y: 4)
                 }
                 .padding(.bottom, 40)
@@ -745,7 +745,7 @@ struct ExamplePickerView: View {
                                         .font(.system(size: 16, weight: .heavy))
                                         .foregroundStyle(Color(hex: "0A0A12"))
                                         .frame(width: 44, height: 44)
-                                        .background(Theme.accent, in: Circle())
+                                        .background(Theme.accent, in: Circle()).primaryCTAGlow()
                                         .opacity(quickPrompt.trimmingCharacters(in: .whitespaces).count >= 8 ? 1 : 0.35)
                                 }
                                 .disabled(quickPrompt.trimmingCharacters(in: .whitespaces).count < 8)
@@ -932,7 +932,7 @@ private struct AISeedCard: View {
                             .foregroundStyle(Color(hex: "0A0A12"))
                             .padding(.horizontal, 5)
                             .padding(.vertical, 2)
-                            .background(Theme.accent, in: Capsule())
+                            .background(Theme.accent, in: Capsule()).primaryCTAGlow()
                     }
                     Text("Type a paragraph; on-device AI proposes hypotheses and observations.")
                         .font(.caption)
@@ -1130,7 +1130,7 @@ struct AISeedView: View {
             .padding(.horizontal, 28)
             .padding(.vertical, 14)
             .frame(maxWidth: .infinity)
-            .background(Theme.accent, in: Capsule())
+            .background(Theme.accent, in: Capsule()).primaryCTAGlow()
             .opacity(prompt.trimmingCharacters(in: .whitespaces).count < 10 && result == nil ? 0.4 : 1)
         }
         .disabled(prompt.trimmingCharacters(in: .whitespaces).count < 10 && result == nil)

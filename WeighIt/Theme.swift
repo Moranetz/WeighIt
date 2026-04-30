@@ -83,6 +83,17 @@ extension View {
     }
 }
 
+// MARK: - Primary CTA Glow
+// Soft accent-color bloom under any solid-accent button. Buttons feel like
+// they're floating on a pocket of light rather than pasted on the surface.
+// Apply as `.primaryCTAGlow()` after the `.background(Theme.accent, ...)` call.
+
+extension View {
+    func primaryCTAGlow(strength: Double = 0.40, radius: CGFloat = 14) -> some View {
+        self.shadow(color: Theme.accent.opacity(strength), radius: radius, y: 2)
+    }
+}
+
 // MARK: - Section Label
 
 struct SectionLabel: View {
@@ -118,9 +129,16 @@ struct CelestialFieldStyle: ViewModifier {
             .overlay(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .strokeBorder(
-                        isFocused ? Theme.accent.opacity(0.7) : Theme.hairline,
+                        isFocused ? Theme.accent.opacity(0.85) : Theme.hairline,
                         lineWidth: isFocused ? 1.5 : 0.5
                     )
+            )
+            // Focused inputs glow with the brand color — typing the question
+            // becomes a moment, not a chore.
+            .shadow(
+                color: isFocused ? Theme.accent.opacity(0.40) : .clear,
+                radius: isFocused ? 16 : 0,
+                y: 0
             )
             .animation(.easeOut(duration: 0.18), value: isFocused)
     }

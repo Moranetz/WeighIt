@@ -572,8 +572,9 @@ struct BoardView: View {
         .foregroundStyle(Theme.accent)
         .padding(.horizontal, 10)
         .padding(.vertical, 5)
-        .background(Theme.accent.opacity(0.10), in: Capsule())
-        .overlay(Capsule().strokeBorder(Theme.accent.opacity(0.3), lineWidth: 1))
+        .background(Theme.accent.opacity(0.12), in: Capsule())
+        .overlay(Capsule().strokeBorder(Theme.accent.opacity(0.4), lineWidth: 1))
+        .primaryCTAGlow(strength: 0.18, radius: 10)
     }
 
     /// Tutorial coachmark — a friendly inline card at the top of the tutorial board
@@ -625,7 +626,7 @@ struct BoardView: View {
                     .foregroundStyle(Color(hex: "0A0A12"))
                     .padding(.horizontal, 18)
                     .padding(.vertical, 10)
-                    .background(Theme.accent, in: Capsule())
+                    .background(Theme.accent, in: Capsule()).primaryCTAGlow()
             }
             .padding(.top, 4)
         }

@@ -509,7 +509,7 @@ struct SteelmanSheet: View {
                         .padding(.horizontal, 18)
                         .padding(.vertical, 12)
                         .frame(maxWidth: .infinity)
-                        .background(Theme.accent, in: Capsule())
+                        .background(Theme.accent, in: Capsule()).primaryCTAGlow()
                     }
                 }
                 .padding(.bottom, 24)
