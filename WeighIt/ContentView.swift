@@ -12,6 +12,7 @@ struct ContentView: View {
     @State private var showOnboarding = false
     @State private var showExamplePicker = false
     @State private var showAISeed = false
+    @State private var aiSeedPrompt: String = ""
     @State private var showCalibration = false
 
     // Working boards (exclude templates from the main list / picker logic)
@@ -159,7 +160,14 @@ struct ContentView: View {
                 },
                 onAISeed: {
                     showExamplePicker = false
-                    // Defer slightly so the sheet dismissal animation can finish
+                    aiSeedPrompt = ""
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                        showAISeed = true
+                    }
+                },
+                onAISeedWithPrompt: { prompt in
+                    showExamplePicker = false
+                    aiSeedPrompt = prompt
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                         showAISeed = true
                     }
@@ -170,13 +178,17 @@ struct ContentView: View {
             .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $showAISeed) {
-            AISeedView { board in
-                context.insert(board)
-                activeBoard = board
-                showAISeed = false
-            } onCancel: {
-                showAISeed = false
-            }
+            AISeedView(
+                initialPrompt: aiSeedPrompt,
+                onAccept: { board in
+                    context.insert(board)
+                    activeBoard = board
+                    showAISeed = false
+                },
+                onCancel: {
+                    showAISeed = false
+                }
+            )
             .presentationDetents([.large])
             .presentationDragIndicator(.visible)
         }
@@ -618,19 +630,24 @@ struct ExamplePickerView: View {
     let onSkip: () -> Void
     let onPickTemplate: ((Board) -> Void)?
     let onAISeed: (() -> Void)?
+    let onAISeedWithPrompt: ((String) -> Void)?
     let templates: [Board]
+    @State private var quickPrompt: String = ""
+    @FocusState private var quickPromptFocused: Bool
 
     init(
         onPick: @escaping (ExampleArchetype) -> Void,
         onSkip: @escaping () -> Void,
         onPickTemplate: ((Board) -> Void)? = nil,
         onAISeed: (() -> Void)? = nil,
+        onAISeedWithPrompt: ((String) -> Void)? = nil,
         templates: [Board] = []
     ) {
         self.onPick = onPick
         self.onSkip = onSkip
         self.onPickTemplate = onPickTemplate
         self.onAISeed = onAISeed
+        self.onAISeedWithPrompt = onAISeedWithPrompt
         self.templates = templates
     }
 
@@ -664,8 +681,59 @@ struct ExamplePickerView: View {
                     }
                     .padding(.top, 28)
 
-                    // AI seed card — full-width promoted CTA at the top
-                    if let onAISeed {
+                    // Question-first quick path — type your situation here and skip
+                    // straight to AI seed without picking an archetype.
+                    if onAISeedWithPrompt != nil {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "questionmark.circle")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundStyle(Theme.accent)
+                                Text("WHAT ARE YOU TRYING TO FIGURE OUT?")
+                                    .font(.system(size: 9, weight: .heavy))
+                                    .tracking(1.4)
+                                    .foregroundStyle(Theme.accent.opacity(0.85))
+                            }
+                            HStack(spacing: 8) {
+                                TextField("e.g. Should I take this offer? Why are signups dropping?",
+                                          text: $quickPrompt,
+                                          axis: .vertical)
+                                    .font(.system(.body, design: .rounded))
+                                    .lineLimit(1...3)
+                                    .foregroundStyle(Theme.textPrimary)
+                                    .focused($quickPromptFocused)
+                                    .padding(12)
+                                    .background(Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 12))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .strokeBorder(quickPromptFocused ? Theme.accent.opacity(0.5) : Theme.border, lineWidth: 1)
+                                    )
+
+                                Button {
+                                    let trimmed = quickPrompt.trimmingCharacters(in: .whitespaces)
+                                    guard trimmed.count >= 8 else { return }
+                                    onAISeedWithPrompt?(trimmed)
+                                } label: {
+                                    Image(systemName: "arrow.right")
+                                        .font(.system(size: 16, weight: .heavy))
+                                        .foregroundStyle(Color(hex: "0A0A12"))
+                                        .frame(width: 44, height: 44)
+                                        .background(Theme.accentGradient, in: Circle())
+                                        .opacity(quickPrompt.trimmingCharacters(in: .whitespaces).count >= 8 ? 1 : 0.35)
+                                }
+                                .disabled(quickPrompt.trimmingCharacters(in: .whitespaces).count < 8)
+                            }
+                            Text("On-device AI builds the matrix. Or pick an example below.")
+                                .font(.caption)
+                                .foregroundStyle(Theme.textDim)
+                                .italic()
+                        }
+                        .padding(.horizontal, 18)
+                        .padding(.bottom, 4)
+                    }
+
+                    // AI seed card (legacy entry — opens AISeedView with empty prompt)
+                    if let onAISeed, onAISeedWithPrompt == nil {
                         AISeedCard(onTap: onAISeed)
                             .padding(.horizontal, 18)
                     }
@@ -921,6 +989,7 @@ private struct TemplateCard: View {
 import FoundationModels
 
 struct AISeedView: View {
+    var initialPrompt: String = ""
     let onAccept: (Board) -> Void
     let onCancel: () -> Void
 
@@ -928,6 +997,7 @@ struct AISeedView: View {
     @State private var isThinking = false
     @State private var result: Board?
     @State private var errorMessage: String?
+    @State private var hasAutoStarted = false
     @FocusState private var promptFocused: Bool
 
     var body: some View {
@@ -990,6 +1060,13 @@ struct AISeedView: View {
             .padding(.horizontal, 22)
         }
         .preferredColorScheme(.dark)
+        .onAppear {
+            if !initialPrompt.isEmpty && !hasAutoStarted {
+                prompt = initialPrompt
+                hasAutoStarted = true
+                Task { await runSeed() }
+            }
+        }
     }
 
     private var primaryButton: some View {

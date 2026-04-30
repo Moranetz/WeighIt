@@ -1,5 +1,20 @@
 import SwiftUI
 
+/// The next rating in long-press cycle order:
+/// empty → bears out → confirms → cuts against → falsifies → inconclusive → empty.
+/// The order goes through useful ratings first (positive then negative) and
+/// puts the rarely-needed 'inconclusive' last before wrapping back to empty.
+fileprivate func nextRating(after current: Rating?) -> Rating? {
+    switch current {
+    case nil:                       return .supports         // bears out
+    case .supports:                 return .stronglySupports // confirms
+    case .stronglySupports:         return .contradicts      // cuts against
+    case .contradicts:              return .stronglyContradicts // falsifies
+    case .stronglyContradicts:      return .irrelevant       // inconclusive
+    case .irrelevant:               return nil               // empty (loop)
+    }
+}
+
 // MARK: - Matrix Grid
 
 struct MatrixGridView: View {
@@ -173,6 +188,17 @@ struct MatrixGridView: View {
                                 if !hyp.isRuledOut {
                                     ratingPopoverCell = cellKey
                                 }
+                            }
+                            // Long-press cycles through ratings without opening
+                            // the popover — fast path for power users. Order:
+                            // empty → bears out → confirms → cuts against →
+                            // falsifies → inconclusive → empty.
+                            .onLongPressGesture(minimumDuration: 0.25) {
+                                guard !hyp.isRuledOut else { return }
+                                let next = nextRating(after: rating)
+                                onRate(ev.id, hyp.id, next)
+                                let haptic = UIImpactFeedbackGenerator(style: .light)
+                                haptic.impactOccurred()
                             }
                             .popover(isPresented: Binding(
                                 get: { ratingPopoverCell == cellKey },
