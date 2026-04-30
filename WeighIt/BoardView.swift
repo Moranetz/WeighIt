@@ -484,6 +484,15 @@ struct BoardView: View {
                             withAnimation(.spring(response: 0.3)) {
                                 board.checkInDate = choice.date
                             }
+                            // Schedule the actual reminder. Permission is requested
+                            // inside the manager — first time only.
+                            Task {
+                                await NotificationManager.scheduleCheckIn(
+                                    boardID: board.id,
+                                    question: board.question,
+                                    fireAt: choice.date
+                                )
+                            }
                         } label: {
                             Text(choice.label)
                                 .font(.system(size: 11, weight: .bold))

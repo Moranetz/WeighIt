@@ -87,10 +87,12 @@ struct HypothesisRow: View {
                 Image(systemName: hypothesis.falsifier.isEmpty
                       ? "questionmark.bubble"
                       : "questionmark.bubble.fill")
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.system(size: 14, weight: .bold))
                     .foregroundStyle(hypothesis.falsifier.isEmpty
                                      ? Theme.textDim
                                      : Theme.accent)
+                    .frame(width: 32, height: 32)
+                    .contentShape(Rectangle())
             }
 
             Button {
@@ -107,10 +109,10 @@ struct HypothesisRow: View {
                 }
             } label: {
                 Image(systemName: hypothesis.isRuledOut ? "sparkles" : "moon.stars")
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(hypothesis.isRuledOut ? Theme.positive : Theme.negative)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 5)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 7)
                     .background(
                         (hypothesis.isRuledOut ? Theme.positive : Theme.negative).opacity(0.1),
                         in: Capsule()
@@ -124,8 +126,10 @@ struct HypothesisRow: View {
             if canDelete {
                 Button(role: .destructive) { onDelete() } label: {
                     Image(systemName: "xmark")
-                        .font(.caption2)
+                        .font(.system(size: 11))
                         .foregroundStyle(Theme.textDim)
+                        .frame(width: 28, height: 28)
+                        .contentShape(Rectangle())
                 }
             }
         }

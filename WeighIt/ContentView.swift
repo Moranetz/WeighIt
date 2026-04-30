@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import UserNotifications
 
 struct ContentView: View {
     @Environment(\.modelContext) private var context
@@ -1371,7 +1372,7 @@ struct CalibrationView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
                 Image(systemName: "chart.line.uptrend.xyaxis")
                     .font(.system(size: 22))
@@ -1381,11 +1382,88 @@ struct CalibrationView: View {
                     .fontWeight(.heavy)
                     .foregroundStyle(Theme.textPrimary)
             }
-            Text("Are you actually right when you say you're 80% sure? Reckon tracks confidence vs outcome across every board you review.")
+            Text("Are you actually right when you say you're 80% sure?")
                 .font(.subheadline)
                 .foregroundStyle(Theme.textDim)
                 .lineSpacing(2)
+
+            // Streak + total + badge — three small status chips
+            HStack(spacing: 8) {
+                statusChip(
+                    icon: "flame.fill",
+                    label: "\(reviewStreakWeeks)-week streak",
+                    color: reviewStreakWeeks >= 1 ? Color(hex: "EF8B6E") : Theme.textDim
+                )
+                statusChip(
+                    icon: "checklist",
+                    label: "\(reviewed.count) reviewed",
+                    color: Theme.textSecondary
+                )
+                if let badge = brierBadge {
+                    statusChip(
+                        icon: badge.icon,
+                        label: badge.label,
+                        color: badge.color
+                    )
+                }
+            }
         }
+    }
+
+    private func statusChip(icon: String, label: String, color: Color) -> some View {
+        HStack(spacing: 5) {
+            Image(systemName: icon)
+                .font(.system(size: 9, weight: .semibold))
+            Text(label)
+                .font(.system(size: 10, weight: .heavy, design: .rounded))
+        }
+        .foregroundStyle(color)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 5)
+        .background(color.opacity(0.10), in: Capsule())
+        .overlay(Capsule().strokeBorder(color.opacity(0.25), lineWidth: 0.75))
+    }
+
+    /// Per-week streak: a "review week" is any week containing at least one
+    /// `outcomeReviewedAt` timestamp. Counts back from the current week.
+    private var reviewStreakWeeks: Int {
+        let cal = Calendar.current
+        let weeksWithReview: Set<DateComponents> = Set(
+            reviewed.compactMap { $0.outcomeReviewedAt }
+                .map { cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: $0) }
+        )
+        var streak = 0
+        var probe = Date()
+        while true {
+            let comps = cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: probe)
+            if weeksWithReview.contains(where: {
+                $0.yearForWeekOfYear == comps.yearForWeekOfYear &&
+                $0.weekOfYear == comps.weekOfYear
+            }) {
+                streak += 1
+                probe = cal.date(byAdding: .weekOfYear, value: -1, to: probe) ?? probe
+            } else {
+                break
+            }
+        }
+        return streak
+    }
+
+    /// Brier-score tier badge. Three tiers reward better calibration:
+    ///   < 0.25 → bronze (Calibrating)
+    ///   < 0.15 → silver (Sharp)
+    ///   < 0.08 → gold   (Razor)
+    /// nil if no reviewed boards yet, or if the score is worse than the bronze threshold.
+    private var brierBadge: (icon: String, label: String, color: Color)? {
+        guard let score = brierLike, reviewed.count >= 3 else { return nil }
+        if score < 0.08 {
+            return ("medal.fill", "Razor calibration", Color(hex: "F5C49A"))
+        } else if score < 0.15 {
+            return ("medal.fill", "Sharp calibration", Color(hex: "C0C0CC"))
+        } else if score < 0.25 {
+            return ("medal", "Calibrating", Color(hex: "B08D5C"))
+        }
+        return nil
     }
 
     private var emptyState: some View {
@@ -1576,5 +1654,64 @@ struct CalibrationView: View {
             }
         }
         .padding(14)
+    }
+}
+
+// MARK: - Notification Manager
+// Schedules + cancels per-board check-in reminders. The check-in date the user
+// picked at conclusion is the dopamine loop: getting pinged "you predicted X —
+// was it right?" is exactly the cadence Tetlock's superforecasters built calibration
+// on. Without notifications, the calibration data Reckon captures stays unreviewed.
+// Notifications are identified by the board's UUID, so changing or clearing the
+// check-in date replaces the schedule cleanly.
+
+enum NotificationManager {
+    @discardableResult
+    static func requestPermissionIfNeeded() async -> Bool {
+        let center = UNUserNotificationCenter.current()
+        let settings = await center.notificationSettings()
+        switch settings.authorizationStatus {
+        case .authorized, .provisional, .ephemeral:
+            return true
+        case .denied:
+            return false
+        case .notDetermined:
+            do {
+                return try await center.requestAuthorization(options: [.alert, .badge, .sound])
+            } catch {
+                return false
+            }
+        @unknown default:
+            return false
+        }
+    }
+
+    static func scheduleCheckIn(boardID: UUID, question: String, fireAt date: Date) async {
+        let granted = await requestPermissionIfNeeded()
+        guard granted else { return }
+
+        cancelCheckIn(boardID: boardID)
+
+        let content = UNMutableNotificationContent()
+        content.title = "Time to review your prediction"
+        content.body = question.isEmpty
+            ? "How did your decision turn out? Reckon is ready to log the outcome."
+            : question
+        content.sound = .default
+        content.categoryIdentifier = "RECKON_CHECKIN"
+
+        let interval = max(1, date.timeIntervalSinceNow)
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false)
+        let request = UNNotificationRequest(
+            identifier: "checkin-\(boardID.uuidString)",
+            content: content,
+            trigger: trigger
+        )
+        try? await UNUserNotificationCenter.current().add(request)
+    }
+
+    static func cancelCheckIn(boardID: UUID) {
+        let id = "checkin-\(boardID.uuidString)"
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [id])
     }
 }
