@@ -13,7 +13,7 @@ platform :ios do
 
   lane :release do
     produce(
-      app_identifier: "com.melmarion.WeighIt",
+      app_identifier: "com.moranetz.WeighIt",
       app_name: "Reckon: Decision Log",
       team_id: "Q242KWQD56"
     )
@@ -23,7 +23,7 @@ platform :ios do
       clean: true,
       export_method: "app-store",
       export_options: "./ExportOptions.plist",
-      xcargs: "CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=Q242KWQD56 CODE_SIGN_IDENTITY='Apple Distribution: MARION MORANETZ (Q242KWQD56)' PROVISIONING_PROFILE_SPECIFIER='com.melmarion.WeighIt AppStore 1777929162'"
+      xcargs: "CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=Q242KWQD56 CODE_SIGN_IDENTITY='Apple Distribution: MARION MORANETZ (Q242KWQD56)' PROVISIONING_PROFILE_SPECIFIER='com.moranetz.WeighIt AppStore 1777929162'"
     )
     upload_to_app_store(
       skip_screenshots: true,

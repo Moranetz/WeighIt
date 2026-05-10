@@ -2,9 +2,9 @@
 
 > *(formerly Weigh It — internal repo name unchanged)*
 
-[![iOS CI](https://github.com/melmarion/WeighIt/actions/workflows/ios-ci.yml/badge.svg)](https://github.com/melmarion/WeighIt/actions/workflows/ios-ci.yml)
-[![Android CI](https://github.com/melmarion/WeighIt/actions/workflows/android-ci.yml/badge.svg)](https://github.com/melmarion/WeighIt/actions/workflows/android-ci.yml)
-[![Status](https://img.shields.io/badge/status-native%20ios%20app-0f172a)](https://github.com/melmarion/WeighIt)
+[![iOS CI](https://github.com/moranetz/WeighIt/actions/workflows/ios-ci.yml/badge.svg)](https://github.com/moranetz/WeighIt/actions/workflows/ios-ci.yml)
+[![Android CI](https://github.com/moranetz/WeighIt/actions/workflows/android-ci.yml/badge.svg)](https://github.com/moranetz/WeighIt/actions/workflows/android-ci.yml)
+[![Status](https://img.shields.io/badge/status-native%20ios%20app-0f172a)](https://github.com/moranetz/WeighIt)
 
 **Reckon ranks hypotheses by what hasn't been knocked down — not by what has the most support.**
 
@@ -100,9 +100,9 @@ The Android app mirrors the native decision workflow: multiple boards, Room pers
 | `MatrixView.swift` | Matrix grid with horizontal scroll, cells, rating popover picker |
 | `ResultsView.swift` | Ranked results, diagnostic evidence, bias warnings, animated scores |
 | `ConfettiView.swift` | Celebration animation on 100% matrix completion |
-| `android-app/app/src/main/java/io/github/melmarion/weighit/android/ui/WeighItApp.kt` | Compose UI, board editor, matrix, results, notes, board sheet |
-| `android-app/app/src/main/java/io/github/melmarion/weighit/android/data/Models.kt` | Android domain model, scoring, diagnostics, export logic |
-| `android-app/app/src/main/java/io/github/melmarion/weighit/android/data/WeighItRepository.kt` | Room-backed persistence and board mutations |
+| `android-app/app/src/main/java/io/github/moranetz/weighit/android/ui/WeighItApp.kt` | Compose UI, board editor, matrix, results, notes, board sheet |
+| `android-app/app/src/main/java/io/github/moranetz/weighit/android/data/Models.kt` | Android domain model, scoring, diagnostics, export logic |
+| `android-app/app/src/main/java/io/github/moranetz/weighit/android/data/WeighItRepository.kt` | Room-backed persistence and board mutations |
 
 ## Product Surface
 

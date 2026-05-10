@@ -1,6 +1,6 @@
 # App Store Optimization — Master Guide (2025-2026)
 
-Complete ASO research for the melmarion iOS portfolio. This is the single reference doc for all App Store submissions.
+Complete ASO research for the moranetz iOS portfolio. This is the single reference doc for all App Store submissions.
 
 ---
 

@@ -1,4 +1,4 @@
-package io.github.melmarion.weighit.android.data
+package io.github.moranetz.weighit.android.data
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map

@@ -42,4 +42,4 @@ decision,analysis,thinking,bias,evidence,hypothesis,critical thinking,rationalit
 Initial release.
 
 ## Support URL
-https://github.com/melmarion/WeighIt
+https://github.com/moranetz/WeighIt

@@ -1,4 +1,4 @@
-package io.github.melmarion.weighit.android
+package io.github.moranetz.weighit.android
 
 import android.content.Intent
 import android.os.Bundle
@@ -6,9 +6,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.room.Room
-import io.github.melmarion.weighit.android.data.WeighItDatabase
-import io.github.melmarion.weighit.android.data.WeighItRepository
-import io.github.melmarion.weighit.android.ui.WeighItApp
+import io.github.moranetz.weighit.android.data.WeighItDatabase
+import io.github.moranetz.weighit.android.data.WeighItRepository
+import io.github.moranetz.weighit.android.ui.WeighItApp
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

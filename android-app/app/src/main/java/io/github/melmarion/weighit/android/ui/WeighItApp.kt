@@ -1,4 +1,4 @@
-package io.github.melmarion.weighit.android.ui
+package io.github.moranetz.weighit.android.ui
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -91,14 +91,14 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewModelScope
-import io.github.melmarion.weighit.android.data.BoardEntity
-import io.github.melmarion.weighit.android.data.BoardSnapshot
-import io.github.melmarion.weighit.android.data.EvidenceEntity
-import io.github.melmarion.weighit.android.data.HypothesisColors
-import io.github.melmarion.weighit.android.data.HypothesisEntity
-import io.github.melmarion.weighit.android.data.Rating
-import io.github.melmarion.weighit.android.data.Weight
-import io.github.melmarion.weighit.android.data.WeighItRepository
+import io.github.moranetz.weighit.android.data.BoardEntity
+import io.github.moranetz.weighit.android.data.BoardSnapshot
+import io.github.moranetz.weighit.android.data.EvidenceEntity
+import io.github.moranetz.weighit.android.data.HypothesisColors
+import io.github.moranetz.weighit.android.data.HypothesisEntity
+import io.github.moranetz.weighit.android.data.Rating
+import io.github.moranetz.weighit.android.data.Weight
+import io.github.moranetz.weighit.android.data.WeighItRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow

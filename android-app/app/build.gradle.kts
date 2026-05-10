@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "io.github.melmarion.weighit.android"
+    namespace = "io.github.moranetz.weighit.android"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "io.github.melmarion.weighit.android"
+        applicationId = "io.github.moranetz.weighit.android"
         minSdk = 26
         targetSdk = 35
         versionCode = 1

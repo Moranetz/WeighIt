@@ -1,4 +1,4 @@
-package io.github.melmarion.weighit.android.data
+package io.github.moranetz.weighit.android.data
 
 import androidx.room.Dao
 import androidx.room.Delete

@@ -28,7 +28,7 @@ The app is build-verified, presentation-ready, and paired with clear proof asset
 
 ## Design Inputs
 
-- `melmarion/UX`
+- `moranetz/UX`
 
 ## Proof
 
