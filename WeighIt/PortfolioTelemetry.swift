@@ -4,40 +4,68 @@
 //  Injected per-app by inject_telemetry.rb — DO NOT hand-edit the copy in an app repo;
 //  edit the canonical file and re-run the injector so the fleet stays consistent.
 //
-//  Design contract:
-//   • Zero third-party dependencies (pure Foundation). No SPM, no IDFA, no ATT, no PII.
-//   • EGRESS-SAFE: if `ANALYTICS_KEY` (Info.plist) is empty/missing, events are buffered
-//     to disk and NEVER sent. A shipped app phones home only after a key is supplied.
-//   • Anonymous identity = random UUID in the Keychain (NOT UserDefaults — applies the
-//     vibecoded-security lesson: tokens/ids in UserDefaults are extractable).
-//   • PostHog-compatible `/capture/` JSON shape, but host/key are config — any
-//     compatible collector works.
-//   • Privacy nutrition label: "Diagnostics, NOT linked to the user." No data is
-//     collected until ANALYTICS_KEY is set; declare accordingly when you flip it on.
+//  v2 (iter5) — rewritten after the cold-eyes audit found data-integrity bugs in v1:
+//   • Identity moved Keychain→UserDefaults: install-scoped. Reinstall = new user, which
+//     is the HONEST default for retention. v1's Keychain id persisted across delete/
+//     reinstall and systematically inflated retention (confidently-wrong data).
+//   • Removed the client-side `day1_return` event: v1 fired it for ANY later return and
+//     mislabeled it D1. Retention/activation are now derived SERVER-SIDE in PostHog from
+//     reliable `app_launch` events (distinct_id + timestamp + days_since_install +
+//     launch_count). The client does not lie about cohorts.
+//   • Buffer cap is now FIFO trim (keep last N), not "delete the whole file."
+//
+//  Contract unchanged: zero deps (Foundation only), no IDFA/ATT/PII. EGRESS-SAFE — if
+//  `ANALYTICS_KEY` (Info.plist) is empty/missing, events buffer to disk and are NEVER
+//  sent. Privacy label: "Diagnostics, not linked to the user" (once a key is set).
 
 import Foundation
 
 enum Telemetry {
 
-    // MARK: Config (from Info.plist; empty key ⇒ no network, ever)
+    // MARK: Config (empty key ⇒ no network, ever)
 
     private static let apiKey: String = {
         (Bundle.main.object(forInfoDictionaryKey: "ANALYTICS_KEY") as? String ?? "")
             .trimmingCharacters(in: .whitespacesAndNewlines)
     }()
-
     private static let host: String = {
         let h = (Bundle.main.object(forInfoDictionaryKey: "ANALYTICS_HOST") as? String ?? "")
             .trimmingCharacters(in: .whitespacesAndNewlines)
         return h.isEmpty ? "https://us.i.posthog.com" : h
     }()
-
     private static var enabled: Bool { !apiKey.isEmpty }
 
-    private static let appId: String =
-        Bundle.main.bundleIdentifier ?? "unknown.app"
-    private static let appVersion: String =
+    private static let appId = Bundle.main.bundleIdentifier ?? "unknown.app"
+    private static let appVersion =
         (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?")
+
+    // MARK: Identity & install state (UserDefaults — install-scoped, honest)
+
+    private static let d = UserDefaults.standard
+    private static let kID = "portfolio.telemetry.anon_id"
+    private static let kFirst = "portfolio.telemetry.first_seen"
+    private static let kLaunches = "portfolio.telemetry.launch_count"
+
+    private static var anonId: String {
+        if let s = d.string(forKey: kID) { return s }
+        let s = UUID().uuidString
+        d.set(s, forKey: kID)
+        return s
+    }
+
+    /// app_launch with the props PostHog needs to derive activation + D1/D7/D30
+    /// retention server-side. No client-side cohort math (v1's bug).
+    private static func launchProps() -> [String: String] {
+        let now = Date()
+        if d.object(forKey: kFirst) == nil { d.set(now.timeIntervalSince1970, forKey: kFirst) }
+        let first = Date(timeIntervalSince1970: d.double(forKey: kFirst))
+        let days = Calendar.current.dateComponents(
+            [.day], from: Calendar.current.startOfDay(for: first),
+            to: Calendar.current.startOfDay(for: now)).day ?? 0
+        let n = d.integer(forKey: kLaunches) + 1
+        d.set(n, forKey: kLaunches)
+        return ["days_since_install": String(days), "launch_count": String(n)]
+    }
 
     // MARK: Plumbing
 
@@ -48,33 +76,27 @@ enum Telemetry {
         c.waitsForConnectivity = false
         return URLSession(configuration: c)
     }()
-
     private static var bufferURL: URL {
         let dir = (try? FileManager.default.url(for: .applicationSupportDirectory,
-                                                in: .userDomainMask,
-                                                appropriateFor: nil,
-                                                create: true))
+                    in: .userDomainMask, appropriateFor: nil, create: true))
             ?? URL(fileURLWithPath: NSTemporaryDirectory())
         return dir.appendingPathComponent("portfolio_telemetry.jsonl")
     }
 
-    // MARK: Public API
+    // MARK: Public API (signatures unchanged — already-wired call sites keep compiling)
 
     /// Call once from the App entry `.task {}` / `init`.
     static func launch() {
         q.async {
-            let first = anonId(createIfMissing: true)
-            _ = first
-            emitDay1ReturnIfDue()
-            event("app_launch")
+            event("app_launch", launchProps())
             flushBuffer()
         }
     }
 
-    /// The single action that predicts retention for THIS app (define per app).
+    /// The first meaningful success in a session (define the verb per app).
     static func activation(_ name: String) { event("activation", ["activation": name]) }
 
-    /// The core value action. `surface` = where in the app it happened.
+    /// The core value action, repeated. `surface` = where it happened.
     static func coreAction(_ name: String, _ surface: String? = nil) {
         event("core_action", ["action": name, "surface": surface ?? ""])
     }
@@ -86,23 +108,20 @@ enum Telemetry {
         event("paywall_convert", ["product": product])
     }
 
-    /// Generic escape hatch.
     static func event(_ name: String, _ props: [String: String] = [:]) {
         let payload: [String: Any] = [
             "api_key": apiKey,
             "event": name,
-            "distinct_id": anonId(createIfMissing: true),
+            "distinct_id": anonId,
             "timestamp": iso(Date()),
             "properties": props.merging([
-                "$app": appId,
-                "app_version": appVersion,
-                "$lib": "portfolio-telemetry",
-                "$os": "iOS"
+                "$app": appId, "app_version": appVersion,
+                "$lib": "portfolio-telemetry", "$os": "iOS"
             ]) { a, _ in a }
         ]
         guard let data = try? JSONSerialization.data(withJSONObject: payload) else { return }
         q.async {
-            guard enabled else { append(data); return }   // egress-safe: buffer only
+            guard enabled else { append(data); return }   // egress-safe
             send(data) { ok in if !ok { append(data) } }
         }
     }
@@ -116,29 +135,25 @@ enum Telemetry {
         r.setValue("application/json", forHTTPHeaderField: "Content-Type")
         r.httpBody = body
         session.dataTask(with: r) { _, resp, err in
-            let ok = err == nil && (resp as? HTTPURLResponse).map { (200..<300).contains($0.statusCode) } ?? false
+            let ok = err == nil &&
+                (resp as? HTTPURLResponse).map { (200..<300).contains($0.statusCode) } ?? false
             done(ok)
         }.resume()
     }
 
-    // MARK: Disk buffer (capped)
+    // MARK: Disk buffer — FIFO trim (keep last N), never nuke
+
+    private static let bufferMaxLines = 500
 
     private static func append(_ line: Data) {
-        var s = String(data: line, encoding: .utf8) ?? ""
-        s += "\n"
         let url = bufferURL
-        if let h = try? FileHandle(forWritingTo: url) {
-            defer { try? h.close() }
-            h.seekToEndOfFile()
-            h.write(s.data(using: .utf8) ?? Data())
-        } else {
-            try? s.data(using: .utf8)?.write(to: url)
+        var lines: [String] = []
+        if let raw = try? String(contentsOf: url, encoding: .utf8), !raw.isEmpty {
+            lines = raw.split(separator: "\n").map(String.init)
         }
-        // Cap at ~256 KB so a key-less app can't grow the buffer unbounded.
-        if let size = try? FileManager.default.attributesOfItem(atPath: url.path)[.size] as? Int,
-           size > 262_144 {
-            try? FileManager.default.removeItem(at: url)
-        }
+        if let s = String(data: line, encoding: .utf8) { lines.append(s) }
+        if lines.count > bufferMaxLines { lines = Array(lines.suffix(bufferMaxLines)) }
+        try? (lines.joined(separator: "\n") + "\n").data(using: .utf8)?.write(to: url)
     }
 
     private static func flushBuffer() {
@@ -151,65 +166,9 @@ enum Telemetry {
         }
     }
 
-    // MARK: Anonymous identity (Keychain, not UserDefaults)
-
-    private static let kcKey = "portfolio.telemetry.anon_id"
-
-    private static func anonId(createIfMissing: Bool) -> String {
-        if let existing = keychainGet(kcKey) { return existing }
-        guard createIfMissing else { return "anon" }
-        let id = UUID().uuidString
-        keychainSet(kcKey, id)
-        return id
-    }
-
-    private static func keychainGet(_ key: String) -> String? {
-        let qd: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrAccount as String: key,
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne
-        ]
-        var out: AnyObject?
-        guard SecItemCopyMatching(qd as CFDictionary, &out) == errSecSuccess,
-              let d = out as? Data, let s = String(data: d, encoding: .utf8) else { return nil }
-        return s
-    }
-
-    private static func keychainSet(_ key: String, _ value: String) {
-        let base: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrAccount as String: key
-        ]
-        SecItemDelete(base as CFDictionary)
-        var add = base
-        add[kSecValueData as String] = value.data(using: .utf8)
-        add[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
-        SecItemAdd(add as CFDictionary, nil)
-    }
-
-    // MARK: D1 return (calendar next-day after first launch)
-
-    private static func emitDay1ReturnIfDue() {
-        let firstKey = "portfolio.telemetry.first_launch"
-        let firedKey = "portfolio.telemetry.d1_fired"
-        let cal = Calendar.current
-        guard let firstStr = keychainGet(firstKey), let first = Double(firstStr) else {
-            keychainSet(firstKey, String(Date().timeIntervalSince1970))
-            return
-        }
-        if keychainGet(firedKey) != nil { return }
-        let firstDate = Date(timeIntervalSince1970: first)
-        if let days = cal.dateComponents([.day], from: cal.startOfDay(for: firstDate),
-                                         to: cal.startOfDay(for: Date())).day, days >= 1 {
-            event("day1_return", ["days_since_first": String(days)])
-            keychainSet(firedKey, "1")
-        }
-    }
-
-    private static func iso(_ d: Date) -> String {
+    private static func iso(_ dt: Date) -> String {
         let f = ISO8601DateFormatter()
         f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return f.string(from: d)
+        return f.string(from: dt)
     }
 }
