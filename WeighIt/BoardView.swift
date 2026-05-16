@@ -6,12 +6,8 @@ struct BoardView: View {
     @State private var showResults = false
     @State private var selectedCell: CellKey?
     @State private var ratingPopoverCell: CellKey?
-    @State private var showConfetti = false
-    @State private var previousFilledCount = 0
 
     private let haptic = UIImpactFeedbackGenerator(style: .light)
-    private let successHaptic = UINotificationFeedbackGenerator()
-    private let confettiDisplayDuration: Duration = .seconds(2.5)
 
     @AppStorage("hasCompletedTutorial") private var hasCompletedTutorial = false
 
@@ -61,28 +57,6 @@ struct BoardView: View {
             .padding(.bottom, 40)
         }
         .scrollDismissesKeyboard(.interactively)
-        .overlay {
-            if showConfetti {
-                ConstellationRevealView(board: board)
-                    .ignoresSafeArea()
-                    .allowsHitTesting(false)
-            }
-        }
-        .onChange(of: board.filledCells) { oldVal, newVal in
-            if board.completionPercent == 100 && previousFilledCount < board.totalCells && board.totalCells > 0 {
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
-                    showConfetti = true
-                }
-                successHaptic.notificationOccurred(.success)
-                Task {
-                    try? await Task.sleep(for: confettiDisplayDuration)
-                    await MainActor.run {
-                        showConfetti = false
-                    }
-                }
-            }
-            previousFilledCount = newVal
-        }
     }
 
     // MARK: - Question
