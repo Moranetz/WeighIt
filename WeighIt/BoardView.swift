@@ -221,6 +221,8 @@ struct BoardView: View {
                 Button {
                     haptic.impactOccurred()
                     let ev = Evidence(sortOrder: board.evidences.count)
+                    Telemetry.activation("first_evidence")
+                    Telemetry.coreAction("add_evidence")
                     withAnimation(.spring(response: 0.5, dampingFraction: 0.75)) {
                         board.evidences.append(ev)
                     }
