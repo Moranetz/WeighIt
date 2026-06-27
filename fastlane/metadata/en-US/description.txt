@@ -1,17 +1,33 @@
-Stop deciding from your gut. Start deciding from evidence.
+Reckon ranks your hypotheses by what hasn't been refuted, not by what has the most support.
 
-Weigh It is a decision-analysis tool for structured thinking. Test hypotheses. Weigh evidence. See your cognitive biases before they see you.
+Most decision tools let you write a long pros-and-cons list and call it analysis. You can rationalize anything in prose. Reckon makes you compare every piece of evidence against every hypothesis, then ranks them by Heuer's Analysis of Competing Hypotheses, the method CIA analysts use to keep wishful thinking out of conclusions. Fewest refutations wins. Most support breaks the tie.
 
-STRUCTURED HYPOTHESIS TESTING
-Frame your decision as competing hypotheses. For each one, log evidence for and against. Watch the balance shift as you add data instead of gut feelings.
+WHAT YOU GET
 
-EVIDENCE WEIGHTING
-Not all evidence is equal. Assign weights based on reliability, relevance, and source quality. The tool calculates what your evidence actually supports — not what you wish it supported.
+• Starter library. Pick from six pre-built example boards (shortseller, founder, researcher, investigator, life decision, doctor), or describe your situation in a paragraph and let on-device AI seed the matrix.
 
-COGNITIVE BIAS VISIBILITY
-The app flags when your evidence pattern matches known cognitive biases — confirmation bias, anchoring, availability heuristic. See your blind spots in real-time.
+• Inline bias guardrails. When one hypothesis collects evidence all in the same direction, Reckon flags it. Evidence that bears out with nothing that cuts against is the structural signature of confirmation bias.
 
-LOCAL & PRIVATE
-All your decisions stay on your device. No cloud. No accounts. Your thinking process is nobody's business.
+• Falsifier pre-commitment. State up front what evidence would prove a hypothesis wrong. The app reminds you whether that evidence ever showed up.
 
-For anyone who makes important decisions and wants to make them better.
+• Steel-manning before you rule out. Before you dismiss a hypothesis, Reckon asks for the strongest case for it, so you don't throw out the right answer early.
+
+• Pre-mortem. After you reach a conclusion, the app asks you to imagine being wrong about it in a year. This catches wishful thinking that refutation-first scoring alone misses.
+
+• Calibration tracking. When you finalize, set your confidence from 0 to 100 percent and a check-in date from one week to one year. Come back when the date arrives, log the actual outcome, and Reckon shows your calibration curve. You find out whether you are actually right when you say you are 80 percent sure.
+
+• Strict Bayes mode (optional). Set explicit priors per hypothesis and the matrix shows Bayesian posterior probabilities updating with each rating, using likelihood ratios per the Tetlock and Heuer convention. Real probability, not a heuristic.
+
+• Plain English mode. Turn off the celestial vocabulary if you would rather see Hypotheses, Evidence, and Matrix than Stars, Observations, and Star chart. Same depth.
+
+• Templates. Save a hypothesis structure, such as forensic-accounting suspects or differential-diagnosis options, and reuse it. Your twelfth board is faster than your first.
+
+PRIVACY
+
+Local only. Your boards, evidence, conclusions, and calibration history stay on your device. There is no server and no account. The AI seed runs on-device through Apple Intelligence, so your situation never leaves your phone.
+
+WHY ACH
+
+Confirming evidence is cheap. Refuting evidence distinguishes. Most decision tools amplify confirmation bias by rewarding the biggest positive sum. Reckon does the opposite.
+
+iOS 17 and later. AI seed and Strict Bayes posterior require iOS 26 and later on Apple Intelligence-capable devices.
