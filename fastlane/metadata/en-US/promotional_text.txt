@@ -1,0 +1,1 @@
+Reckon ranks hypotheses by what hasn't been refuted, not by what has the most support. Set your confidence, then come back later and find out if you were right.

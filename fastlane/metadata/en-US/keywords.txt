@@ -1,1 +1,1 @@
-decision,analysis,thinking,bias,evidence,hypothesis,critical thinking,rationality,logic,judgment
+decision,reasoning,thinking,evidence,hypothesis,bias,rationality,calibration,logic,judgment
