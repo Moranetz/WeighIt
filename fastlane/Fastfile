@@ -13,7 +13,7 @@ platform :ios do
 
   lane :release do
     produce(
-      app_identifier: "com.moranetz.WeighIt",
+      app_identifier: "com.melmarion.WeighIt",
       app_name: "Reckon: Decision Log",
       team_id: "Q242KWQD56"
     )
@@ -23,13 +23,30 @@ platform :ios do
       clean: true,
       export_method: "app-store",
       export_options: "./ExportOptions.plist",
-      xcargs: "CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=Q242KWQD56 CODE_SIGN_IDENTITY='Apple Distribution: MARION MORANETZ (Q242KWQD56)' PROVISIONING_PROFILE_SPECIFIER='com.moranetz.WeighIt AppStore 1777929162'"
+      xcargs: "CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=Q242KWQD56 CODE_SIGN_IDENTITY='Apple Distribution: MARION MORANETZ (Q242KWQD56)' PROVISIONING_PROFILE_SPECIFIER='com.melmarion.WeighIt AppStore 1777929162'"
     )
     upload_to_app_store(
       skip_screenshots: true,
       skip_metadata: true,
       team_id: "Q242KWQD56",
       force: true
+    )
+  end
+
+  # Metadata only. The LIVE record is com.melmarion.WeighIt (1.0 READY_FOR_DISTRIBUTION); the
+  # 2026-05-16 identity wipe renamed this repo's bundle to com.moranetz.WeighIt, which would have
+  # created a second app and orphaned the live one. Restored 2026-09-02 (fleet round 8).
+  lane :listing do
+    upload_to_app_store(
+      app_identifier: "com.melmarion.WeighIt",
+      team_id: "Q242KWQD56",
+      skip_binary_upload: true,
+      skip_metadata: false,
+      skip_screenshots: true,
+      force: true,
+      run_precheck_before_submit: false,
+      submit_for_review: false,
+      precheck_include_in_app_purchases: false
     )
   end
 end
