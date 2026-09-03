@@ -481,7 +481,7 @@ struct OnboardingView: View {
                     .foregroundStyle(Theme.textSecondary)
                     .multilineTextAlignment(.center)
 
-                Text("Most decision tools let you write a long pros-and-cons list and call it analysis. You can rationalize anything in prose.\n\nReckon makes you compare every piece of evidence against every hypothesis — and ranks them by what hasn't been knocked down, not by what has the most support.")
+                Text("Most decision tools ask for a pros-and-cons list. You can write one that supports anything you already believe.\n\nReckon compares every piece of evidence against every hypothesis, then ranks each by how much scrutiny it survived.")
                     .font(.body)
                     .foregroundStyle(Theme.textDim)
                     .multilineTextAlignment(.center)
@@ -513,7 +513,7 @@ struct OnboardingView: View {
                 VStack(alignment: .leading, spacing: 14) {
                     metaphorRow(icon: "star", title: "Hypotheses are stars", body: "Each candidate explanation. Brightness = stability under observation.")
                     metaphorRow(icon: "binoculars", title: "Evidence is observations", body: "Each piece you log. Credibility × relevance is the viewing condition.")
-                    metaphorRow(icon: "scope", title: "Cells are sightlines", body: "Each cell rates one observation against one star. Empty cells pulse — you haven't pointed the telescope there yet.")
+                    metaphorRow(icon: "scope", title: "Cells are sightlines", body: "Each cell rates one observation against one star. An unrated cell pulses until you point the telescope there.")
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 8)
@@ -547,12 +547,12 @@ struct OnboardingView: View {
             .frame(height: 130)
 
             VStack(spacing: 10) {
-                Text("Steadiness, not popularity")
+                Text("Steadiness beats popularity")
                     .font(.title2)
                     .fontWeight(.heavy)
                     .foregroundStyle(Theme.textPrimary)
 
-                Text("Heuer's ACH technique ranks hypotheses by FEWEST refutations — not most support. The right answer is the star nothing has dimmed.")
+                Text("Heuer's ACH technique ranks hypotheses by FEWEST refutations. The right answer is the star nothing has dimmed.")
                     .font(.body)
                     .foregroundStyle(Theme.textDim)
                     .multilineTextAlignment(.center)
@@ -585,7 +585,7 @@ struct OnboardingView: View {
             .padding(.horizontal, 24)
 
             // Closing tagline
-            Text("The brightest star isn't always the right one.\nThe steadiest one is.")
+            Text("Brightness fades under scrutiny.\nSteadiness holds.")
                 .font(.subheadline)
                 .italic()
                 .foregroundStyle(Theme.textSecondary)
@@ -684,7 +684,7 @@ struct ExamplePickerView: View {
                             .fontWeight(.heavy)
                             .foregroundStyle(Theme.textPrimary)
 
-                        Text("ACH works the same in every domain — but the framing matters.\nPick the lens closest to yours. You can always switch later.")
+                        Text("ACH works the same in every domain, but the framing changes.\nPick the lens closest to yours. You can always switch later.")
                             .font(.subheadline)
                             .foregroundStyle(Theme.textDim)
                             .multilineTextAlignment(.center)
@@ -1047,7 +1047,7 @@ struct AISeedView: View {
                 }
                 .padding(.top, 12)
 
-                Text("A paragraph or two. Mention the question, what you've already considered, and any evidence on hand. The model proposes a starting matrix — you'll edit before saving.")
+                Text("A paragraph or two. Mention the question, what you've already considered, and any evidence on hand. The model proposes a starting matrix. You'll edit before saving.")
                     .font(.subheadline)
                     .foregroundStyle(Theme.textDim)
                     .lineSpacing(2)
