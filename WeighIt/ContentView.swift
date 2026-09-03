@@ -586,7 +586,7 @@ struct OnboardingView: View {
             .padding(.horizontal, 24)
 
             // Closing tagline
-            Text("Brightness fades under scrutiny.\nSteadiness holds.")
+            Text("Watch which star stays lit.")
                 .font(.subheadline)
                 .italic()
                 .foregroundStyle(Theme.textSecondary)
