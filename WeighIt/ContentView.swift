@@ -324,6 +324,7 @@ struct BoardListSheet: View {
                                     .foregroundStyle(board.completionPercent == 100 ? Theme.positive : Theme.textDim)
                             }
                         }
+                        .listRowBackground(Theme.surface)
                         .swipeActions(edge: .trailing) {
                             if boards.count > 1 {
                                 Button(role: .destructive) { onDelete(board) } label: {
@@ -337,6 +338,7 @@ struct BoardListSheet: View {
                         Label("New Board", systemImage: "plus.circle.fill")
                             .foregroundStyle(Theme.accent)
                     }
+                    .listRowBackground(Theme.surface)
                 }
                 .scrollContentBackground(.hidden)
             }

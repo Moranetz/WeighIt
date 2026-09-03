@@ -25,11 +25,13 @@ enum Theme {
 
     // Card surfaces — translucent white over the indigo ground, so cards
     // read as a lighter, cooler indigo rather than a separate material.
-    static let surface = Color.white.opacity(0.08)
-    static let surfaceRaised = Color.white.opacity(0.12)
-    static let surfacePressed = Color.white.opacity(0.16)
+    static let surface = Color.white.opacity(0.10)
+    static let surfaceRaised = Color.white.opacity(0.14)
+    static let surfacePressed = Color.white.opacity(0.18)
 
     static let hairline = Color.white.opacity(0.14)
+    // The lit top edge of a card — light from the sky above, not a glow.
+    static let cardTopEdge = Color.white.opacity(0.38)
 
     // Brand accent — saturated coral.
     static let accent = Color(hex: "FF6B47")
@@ -83,8 +85,14 @@ struct CardStyle: ViewModifier {
                     .fill(Theme.surface)
             )
             .overlay(
+                // Lit top edge — light from the sky above the card, not a glow.
+                // Brighter at the top, settling to the ordinary hairline below.
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .strokeBorder(Theme.hairline, lineWidth: 0.5)
+                    .strokeBorder(
+                        LinearGradient(colors: [Theme.cardTopEdge, Theme.hairline],
+                                       startPoint: .top, endPoint: .bottom),
+                        lineWidth: 0.75
+                    )
             )
             // One ambient shadow — neutral near-black, no chromatic bloom.
             // Per impeccable.style #14, colored box-shadow glows on dark are
