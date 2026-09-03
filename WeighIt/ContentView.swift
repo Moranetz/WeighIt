@@ -366,6 +366,7 @@ struct ProgressRingView: View {
 
 struct OnboardingView: View {
     @Binding var isPresented: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var page = 0
     @State private var pageStarPulse = false
     private let totalPages = 3
@@ -382,6 +383,20 @@ struct OnboardingView: View {
                 .ignoresSafeArea()
             StarfieldView(starCount: 140, seed: 12)
                 .ignoresSafeArea()
+            // A flat black sky behind a coral star reads as neon on
+            // near-black. A low warm band toward the horizon keeps the sky
+            // dark while giving the first frame something other than
+            // black + glow.
+            LinearGradient(
+                stops: [
+                    .init(color: .clear, location: 0.62),
+                    .init(color: Theme.accent.opacity(0.22), location: 0.86),
+                    .init(color: Theme.accent.opacity(0.50), location: 1.0),
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
 
             VStack(spacing: 0) {
                 // Skip button — only after page 0
@@ -454,20 +469,13 @@ struct OnboardingView: View {
     /// Page 1: The premise. Why most decision tools don't help, and what's different here.
     private var pageOne: some View {
         VStack(spacing: 32) {
-            // Hero: a single bright star
-            ZStack {
-                Circle()
-                    .fill(Theme.accent.opacity(0.2))
-                    .frame(width: 140, height: 140)
-                    .blur(radius: 30)
-                Image(systemName: "star.fill")
-                    .font(.system(size: 64))
-                    .foregroundStyle(Theme.accent)
-                    .shadow(color: Theme.accent.opacity(0.7), radius: pageStarPulse ? 20 : 10)
-                    .scaleEffect(pageStarPulse ? 1.06 : 1)
-                    .animation(.easeInOut(duration: 2.4).repeatForever(autoreverses: true), value: pageStarPulse)
-            }
-            .onAppear { pageStarPulse = true }
+            // Hero: a single bright star — drawn, not glowed.
+            DrawnStar(color: Theme.accent, size: 64, haloSize: 108, pulse: pageStarPulse)
+                .animation(
+                    reduceMotion ? nil : .easeInOut(duration: 2.4).repeatForever(autoreverses: true),
+                    value: pageStarPulse
+                )
+                .onAppear { pageStarPulse = true }
 
             VStack(spacing: 16) {
                 Text("Reckon")
@@ -525,16 +533,9 @@ struct OnboardingView: View {
     /// Page 3: The cognitive twist. Refutation-first + Pareidolia Alert.
     private var pageThree: some View {
         VStack(spacing: 24) {
-            // Hero: a star with a refutation badge
+            // Hero: a star with a refutation badge — drawn, not glowed.
             ZStack {
-                Circle()
-                    .fill(Color(hex: "5CC4B8").opacity(0.15))
-                    .frame(width: 130, height: 130)
-                    .blur(radius: 25)
-                Image(systemName: "star.fill")
-                    .font(.system(size: 56))
-                    .foregroundStyle(Color(hex: "5CC4B8"))
-                    .shadow(color: Color(hex: "5CC4B8").opacity(0.6), radius: 12)
+                DrawnStar(color: Color(hex: "5CC4B8"), size: 56, haloSize: 96)
                 // Refutation badge
                 Text("0")
                     .font(.system(size: 14, weight: .heavy))

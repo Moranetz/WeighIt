@@ -144,6 +144,74 @@ extension View {
     }
 }
 
+// MARK: - Drawn Star (onboarding hero)
+// A crisp vector star standing in for the SF Symbol + Gaussian-blur glow
+// combo, which reads as the "neon on near-black" tell (impeccable.style
+// #14 — colored glow blobs on dark grounds). This is a flat-filled shape
+// with one directional shading pass (light from upper right, so the
+// lower-left facet reads slightly darker) and a thin, unblurred halo ring
+// at low opacity — the hand-made poster look, not a bloom.
+
+struct StarShape: Shape {
+    var points: Int = 5
+    var innerRatio: CGFloat = 0.5
+
+    func path(in rect: CGRect) -> Path {
+        let center = CGPoint(x: rect.midX, y: rect.midY)
+        let outerRadius = min(rect.width, rect.height) / 2
+        let innerRadius = outerRadius * innerRatio
+        var path = Path()
+        let step = Double.pi / Double(points)
+        for i in 0..<(points * 2) {
+            let radius = i % 2 == 0 ? outerRadius : innerRadius
+            let angle = Double(i) * step - .pi / 2
+            let point = CGPoint(
+                x: center.x + CGFloat(cos(angle)) * radius,
+                y: center.y + CGFloat(sin(angle)) * radius
+            )
+            if i == 0 { path.move(to: point) } else { path.addLine(to: point) }
+        }
+        path.closeSubpath()
+        return path
+    }
+}
+
+struct DrawnStar: View {
+    var color: Color
+    var size: CGFloat = 64
+    var haloSize: CGFloat = 108
+    var pulse: Bool = false
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .stroke(color.opacity(0.42), lineWidth: 2.5)
+                .frame(width: haloSize, height: haloSize)
+
+            StarShape()
+                .fill(color)
+                .overlay(
+                    // Shadow facet, lower-left.
+                    StarShape()
+                        .fill(LinearGradient(colors: [Color.black.opacity(0.32), .clear],
+                                              startPoint: .bottomLeading, endPoint: .center))
+                        .blendMode(.multiply)
+                )
+                .overlay(
+                    // Highlight facet, upper-right — the implied light source.
+                    StarShape()
+                        .fill(LinearGradient(colors: [Color.white.opacity(0.24), .clear],
+                                              startPoint: .topTrailing, endPoint: .center))
+                        .blendMode(.screen)
+                )
+                .compositingGroup()
+                .frame(width: size, height: size)
+                .shadow(color: color.opacity(0.45), radius: 7, y: 2)
+                .scaleEffect(pulse ? 1.05 : 1)
+        }
+    }
+}
+
 // MARK: - Starfield (kept for onboarding hero)
 
 struct StarfieldView: View {
