@@ -39,3 +39,10 @@ android-app/app/build/
 *.mobileprovision
 *.dSYM.zip
 report.xml
+build-release/
+*.ipa
+*.xcarchive
+*.dSYM
+fastlane/report.xml
+fastlane/profiles/
+fastlane/README.md
