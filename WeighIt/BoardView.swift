@@ -239,7 +239,7 @@ struct BoardView: View {
                                  icon: plainEnglishMode ? "tablecells" : "scope")
                     Text(plainEnglishMode
                          ? "Tap any cell to rate that evidence against that hypothesis. Empty cells pulse."
-                         : "Each cell is one sightline. Empty cells pulse — unobserved.")
+                         : "Each cell is one sightline. An empty cell pulses until you rate it.")
                         .font(.caption)
                         .foregroundStyle(Theme.textDim)
                         .fixedSize(horizontal: false, vertical: true)
@@ -399,7 +399,7 @@ struct BoardView: View {
             Text("Imagine you're wrong about this in a year. What happened?")
                 .font(.caption)
                 .foregroundStyle(Theme.textSecondary)
-            TextField("Concretely — what got you here?", text: $board.preMortem, axis: .vertical)
+            TextField("Concretely, what got you here?", text: $board.preMortem, axis: .vertical)
                 .font(.system(.body, design: .rounded))
                 .lineLimit(2...5)
                 .foregroundStyle(Theme.textPrimary)
@@ -580,7 +580,7 @@ struct BoardView: View {
                 .buttonStyle(.plain)
             }
 
-            Text("Two hypotheses. Two pieces of evidence. Two cells already rated.\nTry rating the empty cells in the matrix below — long-press a cell to cycle ratings, or tap to pick one.")
+            Text("Two hypotheses. Two pieces of evidence. Two cells already rated.\nTry rating the empty cells in the matrix below. Long-press a cell to cycle ratings, or tap to pick one.")
                 .font(.subheadline)
                 .foregroundStyle(Theme.textPrimary)
                 .lineSpacing(2)
@@ -596,7 +596,7 @@ struct BoardView: View {
                     hasCompletedTutorial = true
                 }
             } label: {
-                Text("I've got it →")
+                Text("I've got it")
                     .font(.system(.subheadline, design: .rounded))
                     .fontWeight(.bold)
                     .foregroundStyle(Color(hex: "0A0A12"))
@@ -631,7 +631,7 @@ struct BoardView: View {
                 .italic()
                 .foregroundStyle(Theme.textDim)
                 .multilineTextAlignment(.center)
-            Text("Based on Analysis of Competing Hypotheses — the technique CIA analysts use to keep wishful thinking out of conclusions.")
+            Text("Based on Analysis of Competing Hypotheses, the technique CIA analysts use to keep wishful thinking out of conclusions.")
                 .font(.caption2)
                 .foregroundStyle(Theme.textMuted)
                 .multilineTextAlignment(.center)

@@ -350,7 +350,7 @@ struct NotePanel: View {
                     Text(evidence.text.isEmpty ? "Evidence" : evidence.text)
                         .fontWeight(.semibold)
                         .foregroundStyle(Theme.textSecondary)
-                    Text("→")
+                    Image(systemName: "arrow.right")
                         .foregroundStyle(Theme.textDim)
                     Text(hypothesis.name.isEmpty ? "Explanation" : hypothesis.name)
                         .fontWeight(.semibold)

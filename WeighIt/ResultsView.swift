@@ -36,7 +36,7 @@ struct ResultsView: View {
             // that ranking is by stability (fewest refutations), not popularity.
             VStack(alignment: .leading, spacing: 4) {
                 SectionLabel(text: "Constellation confirmed")
-                Text("Ranked by what hasn't been knocked down — fewest refutations first, with a tiebreak on most support.")
+                Text("Ranked by what hasn't been knocked down: fewest refutations first, then most support.")
                     .font(.caption)
                     .foregroundStyle(Theme.textDim)
                     .fixedSize(horizontal: false, vertical: true)
@@ -134,7 +134,7 @@ struct ResultsView: View {
                     Text("The brightest star isn't always the right one.")
                         .font(.caption)
                         .foregroundStyle(Theme.textPrimary)
-                    Text("The steadiest one — the one no observation has dimmed — is.")
+                    Text("The one no observation has dimmed is.")
                         .font(.caption)
                         .foregroundStyle(Theme.textDim)
                         .lineSpacing(2)

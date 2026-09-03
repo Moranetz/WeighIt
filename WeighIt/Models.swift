@@ -501,7 +501,7 @@ final class Board {
         for h in activeHypotheses {
             let lower = h.name.lowercased()
             if lower.contains(" and ") || lower.contains(" plus ") || lower.contains("&") {
-                warnings.append((h, "Has 'and' — conjunction is by definition less likely than either part alone"))
+                warnings.append((h, "Has 'and'. A conjunction is less likely than either part alone"))
             }
         }
         // Detect substantial name-overlap pairs
@@ -512,7 +512,7 @@ final class Board {
                 let b = Set(active[j].name.lowercased().split(separator: " ").map(String.init).filter { $0.count > 4 })
                 let shared = a.intersection(b)
                 if shared.count >= 2 {
-                    warnings.append((active[i], "Overlaps with '\(active[j].name)' — make sure they're truly competing"))
+                    warnings.append((active[i], "Overlaps with '\(active[j].name)'. Make sure they're truly competing"))
                     break
                 }
             }
@@ -649,7 +649,7 @@ final class Board {
             Nothing rated yet. Name your hypotheses, log an observation, then rate at least one cell. The export fills in once there's a verdict here.
 
             ---
-            _Reckon — based on Analysis of Competing Hypotheses_
+            _Reckon, based on Analysis of Competing Hypotheses_
             """
         }
 
@@ -661,7 +661,7 @@ final class Board {
             let scoreStr = s.map { $0 > 0 ? "+\($0)" : "\($0)" } ?? "n/a"
             let prefix = h.isRuledOut ? "~~" : ""
             let suffix = h.isRuledOut ? "~~ (ruled out)" : ""
-            md += "\(i + 1). \(prefix)\(h.name.isEmpty ? "Unnamed" : h.name)\(suffix) → score: \(scoreStr)\n"
+            md += "\(i + 1). \(prefix)\(h.name.isEmpty ? "Unnamed" : h.name)\(suffix): score \(scoreStr)\n"
         }
         md += "\n## Evidence\n\n"
         for ev in sortedEvidence {
@@ -669,13 +669,13 @@ final class Board {
             for h in sortedHypotheses {
                 if let r = rating(evidenceID: ev.id, hypothesisID: h.id) {
                     let n = note(evidenceID: ev.id, hypothesisID: h.id)
-                    md += "  - vs. \(h.name.isEmpty ? "?" : h.name): \(r.shortLabel)\(n.isEmpty ? "" : " — \"\(n)\"")\n"
+                    md += "  - vs. \(h.name.isEmpty ? "?" : h.name): \(r.shortLabel)\(n.isEmpty ? "" : ": \"\(n)\"")\n"
                 }
             }
             md += "\n"
         }
         if !conclusion.isEmpty { md += "## Conclusion\n\n\(conclusion)\n\n" }
-        md += "---\n_Reckon — based on Analysis of Competing Hypotheses_\n"
+        md += "---\n_Reckon, based on Analysis of Competing Hypotheses_\n"
         return md
     }
 
@@ -712,8 +712,8 @@ final class Board {
         question = "Should I work out today or rest?"
         let colors = HypothesisColors.all
 
-        let h1 = Hypothesis(name: "Work out — long-term gains worth it", colorHex: colors[0], sortOrder: 0)
-        let h2 = Hypothesis(name: "Rest — body needs recovery", colorHex: colors[1], sortOrder: 1)
+        let h1 = Hypothesis(name: "Work out: the long-term gains are worth it", colorHex: colors[0], sortOrder: 0)
+        let h2 = Hypothesis(name: "Rest: the body needs recovery", colorHex: colors[1], sortOrder: 1)
         hypotheses = [h1, h2]
 
         let e1 = Evidence(text: "Slept poorly last night (5 hours)", credibility: .high, relevance: .high, sortOrder: 0)
@@ -740,7 +740,7 @@ final class Board {
         let h1 = Hypothesis(name: "Marketing didn't reach the right audience", colorHex: colors[0], sortOrder: 0)
         let h2 = Hypothesis(name: "The product has usability issues", colorHex: colors[1], sortOrder: 1)
         let h3 = Hypothesis(name: "Pricing is too high for the market", colorHex: colors[2], sortOrder: 2)
-        let h4 = Hypothesis(name: "Timing was wrong — market not ready", colorHex: colors[3], sortOrder: 3)
+        let h4 = Hypothesis(name: "Timing was wrong: the market wasn't ready", colorHex: colors[3], sortOrder: 3)
         hypotheses = [h1, h2, h3, h4]
 
         let e1 = Evidence(text: "Social media impressions up 40%", credibility: .high, relevance: .high, sortOrder: 0)
@@ -755,7 +755,7 @@ final class Board {
             CellRating(evidenceID: e2.id, hypothesisID: h2.id, rating: .stronglySupports, note: "Support tickets = confused users"),
             CellRating(evidenceID: e3.id, hypothesisID: h3.id, rating: .stronglySupports),
             CellRating(evidenceID: e3.id, hypothesisID: h1.id, rating: .irrelevant),
-            CellRating(evidenceID: e4.id, hypothesisID: h2.id, rating: .contradicts, note: "Good retention post-onboarding → maybe onboarding, not product"),
+            CellRating(evidenceID: e4.id, hypothesisID: h2.id, rating: .contradicts, note: "Good retention after onboarding, so the problem may be onboarding rather than the product"),
             CellRating(evidenceID: e5.id, hypothesisID: h4.id, rating: .supports, note: "Slow category growth = market still warming up"),
         ]
     }
@@ -799,7 +799,7 @@ final class Board {
         question = "Why isn't our published finding replicating in independent studies?"
         let colors = HypothesisColors.all
 
-        let h1 = Hypothesis(name: "Original finding is real — replication conditions differed", colorHex: colors[0], sortOrder: 0)
+        let h1 = Hypothesis(name: "The original finding is real and the replication conditions differed", colorHex: colors[0], sortOrder: 0)
         let h2 = Hypothesis(name: "P-hacking or publication bias inflated the original", colorHex: colors[1], sortOrder: 1)
         let h3 = Hypothesis(name: "Replication had insufficient power or sample mismatch", colorHex: colors[2], sortOrder: 2)
         let h4 = Hypothesis(name: "Measurement instrument inconsistency between studies", colorHex: colors[3], sortOrder: 3)
@@ -821,7 +821,7 @@ final class Board {
             CellRating(evidenceID: e3.id, hypothesisID: h1.id, rating: .contradicts),
             CellRating(evidenceID: e4.id, hypothesisID: h4.id, rating: .stronglySupports),
             CellRating(evidenceID: e5.id, hypothesisID: h1.id, rating: .stronglyContradicts, note: "Multiple conceptual failures kills the conditions argument"),
-            CellRating(evidenceID: e5.id, hypothesisID: h2.id, rating: .stronglySupports, note: "Pattern of failure → original was likely fragile"),
+            CellRating(evidenceID: e5.id, hypothesisID: h2.id, rating: .stronglySupports, note: "A pattern of failure means the original was likely fragile"),
         ]
     }
 
@@ -834,7 +834,7 @@ final class Board {
         let h1 = Hypothesis(name: "External attacker exploited an unpatched system", colorHex: colors[0], sortOrder: 0)
         let h2 = Hypothesis(name: "An insider with credentials acted maliciously", colorHex: colors[1], sortOrder: 1)
         let h3 = Hypothesis(name: "Third-party vendor was compromised first", colorHex: colors[2], sortOrder: 2)
-        let h4 = Hypothesis(name: "Misreported normal access — no breach occurred", colorHex: colors[5], sortOrder: 3)
+        let h4 = Hypothesis(name: "Misreported normal access, so no breach occurred", colorHex: colors[5], sortOrder: 3)
         hypotheses = [h1, h2, h3, h4]
 
         let e1 = Evidence(text: "Logs show access at 3am from a new IP", credibility: .high, relevance: .high, sortOrder: 0)
@@ -863,10 +863,10 @@ final class Board {
         question = "Should I take this new job offer?"
         let colors = HypothesisColors.all
 
-        let h1 = Hypothesis(name: "Yes — significantly better long-term", colorHex: colors[0], sortOrder: 0)
-        let h2 = Hypothesis(name: "Yes — better short-term but not long-term", colorHex: colors[3], sortOrder: 1)
-        let h3 = Hypothesis(name: "No — current role is undervalued by me", colorHex: colors[5], sortOrder: 2)
-        let h4 = Hypothesis(name: "No — wait, better options will appear", colorHex: colors[2], sortOrder: 3)
+        let h1 = Hypothesis(name: "Yes, significantly better long-term", colorHex: colors[0], sortOrder: 0)
+        let h2 = Hypothesis(name: "Yes, better short-term but not long-term", colorHex: colors[3], sortOrder: 1)
+        let h3 = Hypothesis(name: "No, I undervalue my current role", colorHex: colors[5], sortOrder: 2)
+        let h4 = Hypothesis(name: "No, wait: better options will appear", colorHex: colors[2], sortOrder: 3)
         hypotheses = [h1, h2, h3, h4]
 
         let e1 = Evidence(text: "25% comp increase", credibility: .high, relevance: .high, sortOrder: 0)

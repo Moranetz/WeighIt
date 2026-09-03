@@ -1579,7 +1579,7 @@ struct CalibrationView: View {
                             .font(.caption)
                             .foregroundStyle(Theme.textSecondary)
                         Spacer()
-                        Text("→ actually \(Int(bucket.actual))%")
+                        Text("actually \(Int(bucket.actual))%")
                             .font(.system(.caption, design: .rounded))
                             .fontWeight(.bold)
                             .foregroundStyle(
