@@ -851,7 +851,7 @@ private struct ArchetypeCard: View {
             .background {
                 ZStack {
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(.ultraThinMaterial.opacity(0.55))
+                        .fill(Theme.surfaceRaised)
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
                         .fill(LinearGradient(
                             colors: [
@@ -928,7 +928,7 @@ private struct AISeedCard: View {
             .background {
                 ZStack {
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(.ultraThinMaterial.opacity(0.6))
+                        .fill(Theme.surfaceRaised)
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
                         .fill(LinearGradient(
                             colors: [Theme.accent.opacity(0.18), Color.clear],
@@ -983,7 +983,7 @@ private struct TemplateCard: View {
             .background {
                 ZStack {
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(.ultraThinMaterial.opacity(0.55))
+                        .fill(Theme.surfaceRaised)
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
                         .strokeBorder(Theme.accent.opacity(0.25), lineWidth: 1)
                 }
@@ -1527,7 +1527,7 @@ struct CalibrationView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(.ultraThinMaterial.opacity(0.55))
+                .fill(Theme.surfaceRaised)
                 .overlay(
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
                         .strokeBorder(Theme.accent.opacity(0.22), lineWidth: 1)
@@ -1588,7 +1588,7 @@ struct CalibrationView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(.ultraThinMaterial.opacity(0.55))
+                .fill(Theme.surfaceRaised)
                 .overlay(
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
                         .strokeBorder(Theme.hairline, lineWidth: 1)
@@ -1641,7 +1641,7 @@ struct CalibrationView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(.ultraThinMaterial.opacity(0.55))
+                .fill(Theme.surfaceRaised)
                 .overlay(
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
                         .strokeBorder(Theme.warning.opacity(0.22), lineWidth: 1)

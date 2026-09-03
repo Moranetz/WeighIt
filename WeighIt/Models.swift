@@ -965,7 +965,7 @@ enum ExampleArchetype: String, CaseIterable, Identifiable {
         switch self {
         case .tutorial:      "graduationcap"
         case .shortseller:   "chart.line.downtrend.xyaxis"
-        case .founder:       "rocket"
+        case .founder:       "flame"
         case .scientist:     "atom"
         case .investigator:  "doc.text.magnifyingglass"
         case .lifeDecision:  "signpost.right.and.left"

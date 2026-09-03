@@ -25,9 +25,13 @@ enum Theme {
 
     // Card surfaces — translucent white over the indigo ground, so cards
     // read as a lighter, cooler indigo rather than a separate material.
-    static let surface = Color.white.opacity(0.10)
-    static let surfaceRaised = Color.white.opacity(0.14)
-    static let surfacePressed = Color.white.opacity(0.18)
+    // Opaque now — a translucent card let the Milky Way and stars show
+    // through as bright dots inside text fields and card bodies (2026-09-02
+    // readback). The sky belongs to the ground; cards are solid material
+    // sitting on it, visible only in the gaps between them.
+    static let surface = Color(hex: "2B2F6E")
+    static let surfaceRaised = Color(hex: "343978")
+    static let surfacePressed = Color(hex: "3D4384")
 
     static let hairline = Color.white.opacity(0.14)
     // The lit top edge of a card — light from the sky above, not a glow.
@@ -149,8 +153,10 @@ struct CelestialFieldStyle: ViewModifier {
         content
             .padding(14)
             .background(
+                // Opaque, and a touch recessed relative to the card it sits in —
+                // a field cut into the surface, not another window onto the sky.
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(Color.white.opacity(0.04))
+                    .fill(Color(hex: "1E2158"))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)

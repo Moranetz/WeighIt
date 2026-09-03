@@ -610,7 +610,7 @@ struct BoardView: View {
         .background {
             ZStack {
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(.ultraThinMaterial.opacity(0.7))
+                    .fill(Theme.surfaceRaised)
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .fill(LinearGradient(
                         colors: [Color(hex: "F5C49A").opacity(0.18), Color.clear],
