@@ -640,7 +640,20 @@ final class Board {
     // MARK: Export
 
     func exportMarkdown() -> String {
-        var md = "# Weigh It\n\n"
+        // A board with nothing rated yet has no verdict to share. Say what
+        // fills this in instead of exporting a card full of "Unnamed" rows.
+        guard filledCells > 0 else {
+            return """
+            # Reckon
+
+            Nothing rated yet. Name your hypotheses, log an observation, then rate at least one cell. The export fills in once there's a verdict here.
+
+            ---
+            _Reckon — based on Analysis of Competing Hypotheses_
+            """
+        }
+
+        var md = "# Reckon\n\n"
         if !question.isEmpty { md += "**Question:** \(question)\n\n" }
         md += "## Explanations\n"
         for (i, h) in sortedHypotheses.enumerated() {
@@ -662,7 +675,7 @@ final class Board {
             md += "\n"
         }
         if !conclusion.isEmpty { md += "## Conclusion\n\n\(conclusion)\n\n" }
-        md += "---\n_Weigh It — based on Analysis of Competing Hypotheses_\n"
+        md += "---\n_Reckon — based on Analysis of Competing Hypotheses_\n"
         return md
     }
 

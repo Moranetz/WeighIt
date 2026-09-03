@@ -123,6 +123,19 @@ struct ContentView: View {
             if !hasSeenOnboarding {
                 showOnboarding = true
             } else if boards.isEmpty {
+                #if DEBUG
+                if DebugLaunchArgs.forceBlankBoard {
+                    let board = Board()
+                    context.insert(board)
+                    activeBoard = board
+                } else if !hasCompletedTutorial {
+                    let board = Board(archetype: .tutorial)
+                    context.insert(board)
+                    activeBoard = board
+                } else {
+                    showExamplePicker = true
+                }
+                #else
                 // First launch after onboarding: skip the picker entirely and drop the
                 // user straight into the Quick Tour. Less choice, less paralysis.
                 if !hasCompletedTutorial {
@@ -132,7 +145,12 @@ struct ContentView: View {
                 } else {
                     showExamplePicker = true
                 }
+                #endif
             }
+            #if DEBUG
+            if DebugLaunchArgs.showBoardList { showBoardList = true }
+            if DebugLaunchArgs.showCalibration { showCalibration = true }
+            #endif
         }
         .onChange(of: showOnboarding) { _, newValue in
             // When onboarding closes for the first time, the same first-launch logic:
@@ -1410,24 +1428,30 @@ struct CalibrationView: View {
                 .foregroundStyle(Theme.textDim)
                 .lineSpacing(2)
 
-            // Streak + total + badge — three small status chips
-            HStack(spacing: 8) {
-                statusChip(
-                    icon: "flame.fill",
-                    label: "\(reviewStreakWeeks)-week streak",
-                    color: reviewStreakWeeks >= 1 ? Color(hex: "EF8B6E") : Theme.textDim
-                )
-                statusChip(
-                    icon: "checklist",
-                    label: "\(reviewed.count) reviewed",
-                    color: Theme.textSecondary
-                )
-                if let badge = brierBadge {
+            // Streak + total + badge — three small status chips. All three are
+            // derived from `reviewed`, so before a single board has been reviewed
+            // they'd only ever read "0-week streak" and "0 reviewed": a rank
+            // before a rating. The empty state below already says what fills
+            // them in, so the chips wait for the first real number.
+            if !reviewed.isEmpty {
+                HStack(spacing: 8) {
                     statusChip(
-                        icon: badge.icon,
-                        label: badge.label,
-                        color: badge.color
+                        icon: "flame.fill",
+                        label: "\(reviewStreakWeeks)-week streak",
+                        color: reviewStreakWeeks >= 1 ? Color(hex: "EF8B6E") : Theme.textDim
                     )
+                    statusChip(
+                        icon: "checklist",
+                        label: "\(reviewed.count) reviewed",
+                        color: Theme.textSecondary
+                    )
+                    if let badge = brierBadge {
+                        statusChip(
+                            icon: badge.icon,
+                            label: badge.label,
+                            color: badge.color
+                        )
+                    }
                 }
             }
         }
