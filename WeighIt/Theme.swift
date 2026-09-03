@@ -1,30 +1,30 @@
 import SwiftUI
 
-// MARK: - Theme — "Vivid Twilight"
+// MARK: - Theme — "The Night Sky As A Place"
 //
-// The previous near-black ground was reading as cold and lifeless. Engagement
-// research (Mehta & Zhu 2009; Pickering 2020; the Duolingo / Headspace /
-// Spotify / Linear playbooks) all converge on the same recipe for "alive but
-// not chaotic" interfaces:
+// 2026-09-02: the flat near-black ground read as a rectangle with dots, not a
+// sky — bar_audit G1 (dark AND desaturated) failed on every screen. The fix
+// isn't a filter, it's a WORLD: a deep saturated indigo-blue ground that
+// warms toward a horizon glow at the bottom, a Milky Way band, stars in three
+// sizes, and a treeline so the sky sits on land. Chroma lives in the ground
+// (a large, low-frequency field — halation-safe); text stays a restrained
+// cream so nothing shimmers at small sizes (dark_mode_chroma_in_fields).
 //
-//   1. Warm-tinted dark, not pure black. Pure #000 makes the brain read
-//      the surface as void; warm grays make it read as material.
-//   2. One bright, fully-saturated brand color used confidently.
-//   3. A second contrasting hue for "thinking" or secondary punctuation.
-//   4. A semantic palette that's bright enough to pop — emerald, cherry,
-//      mustard — not muted neutrals.
-//   5. Multi-hue identity colors so each piece of content has its own
-//      pattern-recognition anchor.
+//   1. Ground carries the world (fleet-loop research: chrome load kills a
+//      screen faster than any single component choice).
+//   2. Chroma in the FIELD, restraint in the GLYPHS.
+//   3. One accent, ember orange, used for the one thing on each screen.
+//   4. No glow filters — a hand-drawn poster, not a bloom.
 
 enum Theme {
-    // Ground — deep warm-tinted dark. Warm cast (slight red bias) keeps it
-    // reading as material, not void, and intentionally avoids the
-    // purple/indigo-on-dark "AI color palette" tell (impeccable.style #13).
-    static let bg = Color(hex: "0F0A08")
-    static let bgElevated = Color(hex: "1A120E")
+    // Ground — deep saturated indigo-blue, matching the sky's zenith tone.
+    // Used for flat chrome (toolbar tint, sticky headers) so it reads as one
+    // continuous world rather than a patchwork of leftover neutrals.
+    static let bg = Color(hex: "10163E")
+    static let bgElevated = Color(hex: "1B2150")
 
-    // Card surfaces — bumped for stronger contrast and presence on the
-    // darker ground. Cards now read as clearly lifted, not barely-there.
+    // Card surfaces — translucent white over the indigo ground, so cards
+    // read as a lighter, cooler indigo rather than a separate material.
     static let surface = Color.white.opacity(0.08)
     static let surfaceRaised = Color.white.opacity(0.12)
     static let surfacePressed = Color.white.opacity(0.16)
@@ -50,6 +50,23 @@ enum Theme {
     static let positive = Color(hex: "34D399")
     static let negative = Color(hex: "F87171")
     static let warning = Color(hex: "FBBF24")
+
+    // MARK: - The Night Sky
+    // Ground gradient: deep indigo-blue zenith, warming through a low-chroma
+    // dusk band, to an ember horizon glow — the light from somewhere. The
+    // path deliberately dips saturation around 341° before ramping the
+    // ember hue so the transition never sustains a violet band.
+    static let skyGroundStops: [Gradient.Stop] = [
+        .init(color: Color(hex: "04063F"), location: 0.0),
+        .init(color: Color(hex: "0A18A0"), location: 0.35),
+        .init(color: Color(hex: "221A74"), location: 0.60),
+        .init(color: Color(hex: "5C2032"), location: 0.80),
+        .init(color: Color(hex: "C24C0A"), location: 1.0),
+    ]
+
+    static let starWarm = Color(hex: "FFD9A8")
+    static let starCool = Color(hex: "AFCBFF")
+    static let ridge = Color(hex: "070912")
 }
 
 // MARK: - Card Modifier
@@ -212,53 +229,158 @@ struct DrawnStar: View {
     }
 }
 
-// MARK: - Starfield (kept for onboarding hero)
+// MARK: - The Sky
+//
+// One background for every screen: a saturated indigo-blue ground, a Milky
+// Way band (a soft cloud of many tiny points, not a blur), and stars in
+// three sizes with a warm/cool mix. Drawn once per appearance — no
+// TimelineView — so it costs nothing on a screen that scrolls (BoardView) or
+// rebuilds on every keystroke (the matrix). `treeline` adds a thin dark
+// ridge silhouette along the bottom edge so the sky sits on land; use it on
+// screens that read as "a place" (home, calibration) and leave it off where
+// a sheet or modal is transient (onboarding, example picker, AI seed).
 
-struct StarfieldView: View {
-    let starCount: Int
-    private let seed: UInt64
-    @State private var phase: Double = 0
-
-    init(starCount: Int = 80, seed: UInt64 = 47) {
-        self.starCount = starCount
-        self.seed = seed
-    }
+struct SkyBackground: View {
+    var seed: UInt64 = 1
+    var treeline: Bool = false
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0/30.0)) { timeline in
-            GeometryReader { geo in
-                Canvas { context, size in
-                    let now = timeline.date.timeIntervalSinceReferenceDate
-                    var rng = SeededGenerator(seed: seed)
-                    for _ in 0..<starCount {
-                        let x = Double.random(in: 0...size.width, using: &rng)
-                        let y = Double.random(in: 0...size.height, using: &rng)
-                        let r = Double.random(in: 0.35...1.1, using: &rng)
-                        let alpha = Double.random(in: 0.10...0.32, using: &rng)
-                        let rect = CGRect(x: x - r, y: y - r, width: r * 2, height: r * 2)
-                        context.fill(Path(ellipseIn: rect), with: .color(.white.opacity(alpha)))
-                    }
-                    var rng2 = SeededGenerator(seed: seed &+ 1)
-                    let twinkleCount = max(8, starCount / 8)
-                    for i in 0..<twinkleCount {
-                        let x = Double.random(in: 0...size.width, using: &rng2)
-                        let y = Double.random(in: 0...size.height, using: &rng2)
-                        let r = Double.random(in: 0.7...1.7, using: &rng2)
-                        let baseAlpha = Double.random(in: 0.20...0.55, using: &rng2)
-                        let speed = Double.random(in: 0.6...1.4, using: &rng2)
-                        let offset = Double(i) * 0.7
-                        let breath = (sin(now * speed + offset) + 1) / 2
-                        let alpha = baseAlpha * (0.4 + breath * 0.6)
-                        let glowRect = CGRect(x: x - r * 2.5, y: y - r * 2.5, width: r * 5, height: r * 5)
-                        context.fill(Path(ellipseIn: glowRect), with: .color(.white.opacity(alpha * 0.18)))
-                        let rect = CGRect(x: x - r, y: y - r, width: r * 2, height: r * 2)
-                        context.fill(Path(ellipseIn: rect), with: .color(.white.opacity(alpha)))
-                    }
+        ZStack {
+            LinearGradient(gradient: Gradient(stops: Theme.skyGroundStops),
+                           startPoint: .top, endPoint: .bottom)
+
+            SkyFieldView(seed: seed)
+
+            if treeline {
+                VStack(spacing: 0) {
+                    Spacer()
+                    RidgelineShape(seed: seed &+ 900)
+                        .fill(Theme.ridge)
+                        .frame(height: 56)
                 }
-                .frame(width: geo.size.width, height: geo.size.height)
             }
         }
+        .ignoresSafeArea()
         .allowsHitTesting(false)
+    }
+}
+
+/// The Milky Way band + the ambient starfield, drawn in one Canvas pass.
+private struct SkyFieldView: View {
+    let seed: UInt64
+
+    var body: some View {
+        GeometryReader { geo in
+            Canvas { context, size in
+                drawMilkyWay(&context, size: size)
+                drawStars(&context, size: size)
+            }
+            .frame(width: geo.size.width, height: geo.size.height)
+        }
+    }
+
+    /// A diagonal band of many tiny, low-alpha points — dense near its
+    /// centerline, thinning toward the edges (three summed uniforms stand
+    /// in for a Gaussian without pulling in extra machinery). Kept out of
+    /// the bottom quarter so it never muddies the horizon glow.
+    private func drawMilkyWay(_ context: inout GraphicsContext, size: CGSize) {
+        var rng = SeededGenerator(seed: seed &+ 500)
+        // Endpoints chosen just outside the frame so the sampled segment
+        // (not a length*angle projection that mostly misses the screen)
+        // maps almost entirely onto visible pixels.
+        let a = CGPoint(x: size.width * -0.15, y: size.height * 0.02)
+        let b = CGPoint(x: size.width * 1.15, y: size.height * 0.60)
+        let dx = b.x - a.x, dy = b.y - a.y
+        let segLength = max(1, (dx * dx + dy * dy).squareRoot())
+        let dir = CGVector(dx: dx / segLength, dy: dy / segLength)
+        let perp = CGVector(dx: -dir.dy, dy: dir.dx)
+        let bandWidth = size.width * 0.24
+        let ceiling = size.height * 0.76
+        let count = 2600
+
+        for _ in 0..<count {
+            let along = Double.random(in: 0...segLength, using: &rng)
+            // Two summed uniforms (not one) so the band keeps a visible,
+            // brighter core rather than a uniform-density strip.
+            let g = (Double.random(in: -1...1, using: &rng)
+                     + Double.random(in: -1...1, using: &rng)) / 2
+            let perpOffset = g * bandWidth
+            let x = a.x + dir.dx * along + perp.dx * perpOffset
+            let y = a.y + dir.dy * along + perp.dy * perpOffset
+            guard x > -4, x < size.width + 4, y > -4, y < ceiling else { continue }
+            // Denser near the centerline reads brighter there, same as a
+            // real Milky Way core — falloff comes from |g|, not just alpha jitter.
+            let core = max(0, 1 - abs(g))
+            let r = Double.random(in: 0.35...0.8, using: &rng)
+            let alpha = (0.07 + core * 0.24) * Double.random(in: 0.65...1.0, using: &rng)
+            let rect = CGRect(x: x - r, y: y - r, width: r * 2, height: r * 2)
+            context.fill(Path(ellipseIn: rect), with: .color(Color(hex: "E8E2FF").opacity(alpha)))
+        }
+    }
+
+    /// Three size tiers: many tiny points, fewer mid stars, a handful of
+    /// large ones — mostly white with a deliberate warm/cool minority so
+    /// the sky reads as varied light, not a uniform dot grid.
+    private func drawStars(_ context: inout GraphicsContext, size: CGSize) {
+        var rng = SeededGenerator(seed: seed)
+
+        func starColor(_ r: inout SeededGenerator) -> Color {
+            let roll = Double.random(in: 0...1, using: &r)
+            if roll < 0.72 { return .white }
+            return roll < 0.86 ? Theme.starWarm : Theme.starCool
+        }
+
+        // Tier 1 — small, majority.
+        for _ in 0..<170 {
+            let x = Double.random(in: 0...size.width, using: &rng)
+            let y = Double.random(in: 0...size.height * 0.88, using: &rng)
+            let r = Double.random(in: 0.4...0.8, using: &rng)
+            let alpha = Double.random(in: 0.28...0.55, using: &rng)
+            let rect = CGRect(x: x - r, y: y - r, width: r * 2, height: r * 2)
+            context.fill(Path(ellipseIn: rect), with: .color(starColor(&rng).opacity(alpha)))
+        }
+        // Tier 2 — medium, fewer.
+        for _ in 0..<38 {
+            let x = Double.random(in: 0...size.width, using: &rng)
+            let y = Double.random(in: 0...size.height * 0.85, using: &rng)
+            let r = Double.random(in: 1.0...1.5, using: &rng)
+            let alpha = Double.random(in: 0.45...0.72, using: &rng)
+            let rect = CGRect(x: x - r, y: y - r, width: r * 2, height: r * 2)
+            context.fill(Path(ellipseIn: rect), with: .color(starColor(&rng).opacity(alpha)))
+        }
+        // Tier 3 — large, rare. A thin unblurred halo ring, not a glow.
+        for _ in 0..<9 {
+            let x = Double.random(in: 0...size.width, using: &rng)
+            let y = Double.random(in: 0...size.height * 0.6, using: &rng)
+            let r = Double.random(in: 1.6...2.2, using: &rng)
+            let color = starColor(&rng)
+            let alpha = Double.random(in: 0.7...0.95, using: &rng)
+            let haloRect = CGRect(x: x - r * 2.4, y: y - r * 2.4, width: r * 4.8, height: r * 4.8)
+            context.stroke(Path(ellipseIn: haloRect), with: .color(color.opacity(alpha * 0.35)), lineWidth: 0.6)
+            let rect = CGRect(x: x - r, y: y - r, width: r * 2, height: r * 2)
+            context.fill(Path(ellipseIn: rect), with: .color(color.opacity(alpha)))
+        }
+    }
+}
+
+/// A thin, jagged ridge silhouette so the sky sits on land — deliberately
+/// irregular (varying peak heights), never a smooth wave.
+private struct RidgelineShape: Shape {
+    let seed: UInt64
+
+    func path(in rect: CGRect) -> Path {
+        var rng = SeededGenerator(seed: seed)
+        var path = Path()
+        path.move(to: CGPoint(x: 0, y: rect.maxY))
+        let segments = 14
+        for i in 0...segments {
+            let x = rect.width * CGFloat(i) / CGFloat(segments)
+            let y = rect.maxY - CGFloat.random(in: 4...(rect.height * 0.92), using: &rng)
+            path.addLine(to: CGPoint(x: x, y: y))
+        }
+        path.addLine(to: CGPoint(x: rect.width, y: rect.maxY))
+        path.closeSubpath()
+        return path
     }
 }
 

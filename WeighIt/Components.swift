@@ -406,12 +406,7 @@ struct SteelmanSheet: View {
 
     var body: some View {
         ZStack {
-            Color(hex: "0B0F1F").ignoresSafeArea()
-            RadialGradient(colors: [Color(hex: "2D2659").opacity(0.55), .clear],
-                           center: .topLeading, startRadius: 0, endRadius: 500)
-                .ignoresSafeArea()
-            StarfieldView(starCount: 70, seed: 31)
-                .ignoresSafeArea()
+            SkyBackground(seed: 31)
 
             VStack(alignment: .leading, spacing: 18) {
                 HStack(spacing: 10) {

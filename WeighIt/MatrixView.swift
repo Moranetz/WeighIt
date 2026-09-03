@@ -44,7 +44,7 @@ struct MatrixGridView: View {
                         .foregroundStyle(Theme.textDim)
                         .frame(width: 150, height: 70, alignment: .leading)
                         .padding(.leading, 14)
-                        .background(Color(hex: "161416"))
+                        .background(Theme.bgElevated)
                         .overlay(alignment: .trailing) {
                             Rectangle().fill(Theme.hairline).frame(width: 1)
                         }
@@ -135,7 +135,7 @@ struct MatrixGridView: View {
                             }
                         }
                         .frame(width: 110, height: 72)
-                        .background(Color(hex: "161416"))
+                        .background(Theme.bgElevated)
                         .opacity(hyp.isRuledOut ? 0.35 : 1)
                         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: stability)
                         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: refutations)

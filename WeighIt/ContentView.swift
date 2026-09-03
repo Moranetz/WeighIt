@@ -24,18 +24,9 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // Calm warm-dark ground with a single, restrained warm wash
-                // up top. No purple/indigo overlays (impeccable.style #13:
-                // "AI color palette") and no atmospheric layer-stack
-                // (the lava-lamp / vibecoded background tell).
-                Theme.bg.ignoresSafeArea()
-                RadialGradient(
-                    colors: [Theme.accent.opacity(0.10), .clear],
-                    center: .top,
-                    startRadius: 0,
-                    endRadius: 480
-                )
-                .ignoresSafeArea()
+                // The night sky as a place — ground, Milky Way, stars, and a
+                // treeline so the tutorial board and matrix sit on land.
+                SkyBackground(seed: 1, treeline: true)
 
                 if let board = activeBoard {
                     BoardView(board: board)
@@ -300,46 +291,54 @@ struct BoardListSheet: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                ForEach(boards) { board in
-                    Button {
-                        activeBoard = board
-                        dismiss()
-                    } label: {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(board.displayName)
-                                    .font(.subheadline)
-                                    .fontWeight(board.id == activeBoard?.id ? .bold : .medium)
-                                    .foregroundStyle(board.id == activeBoard?.id ? Theme.accent : Theme.textPrimary)
-                                Text(board.updatedAt.formatted(.relative(presentation: .named)))
-                                    .font(.caption)
-                                    .foregroundStyle(Theme.textDim)
-                            }
-                            Spacer()
-                            if board.id == activeBoard?.id {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundStyle(Theme.accent)
-                            }
-                            Text("\(board.completionPercent)%")
-                                .font(.caption)
-                                .fontWeight(.bold)
-                                .foregroundStyle(board.completionPercent == 100 ? Theme.positive : Theme.textDim)
-                        }
-                    }
-                    .swipeActions(edge: .trailing) {
-                        if boards.count > 1 {
-                            Button(role: .destructive) { onDelete(board) } label: {
-                                Label("Delete", systemImage: "trash")
-                            }
-                        }
-                    }
-                }
+            ZStack {
+                // The board list is its own place in the same sky, not a
+                // system sheet — the previous default background showed as
+                // 99% near-neutral chrome under bar_audit.
+                SkyBackground(seed: 55)
 
-                Button { onNew() } label: {
-                    Label("New Board", systemImage: "plus.circle.fill")
-                        .foregroundStyle(Theme.accent)
+                List {
+                    ForEach(boards) { board in
+                        Button {
+                            activeBoard = board
+                            dismiss()
+                        } label: {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(board.displayName)
+                                        .font(.subheadline)
+                                        .fontWeight(board.id == activeBoard?.id ? .bold : .medium)
+                                        .foregroundStyle(board.id == activeBoard?.id ? Theme.accent : Theme.textPrimary)
+                                    Text(board.updatedAt.formatted(.relative(presentation: .named)))
+                                        .font(.caption)
+                                        .foregroundStyle(Theme.textDim)
+                                }
+                                Spacer()
+                                if board.id == activeBoard?.id {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundStyle(Theme.accent)
+                                }
+                                Text("\(board.completionPercent)%")
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                                    .foregroundStyle(board.completionPercent == 100 ? Theme.positive : Theme.textDim)
+                            }
+                        }
+                        .swipeActions(edge: .trailing) {
+                            if boards.count > 1 {
+                                Button(role: .destructive) { onDelete(board) } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
+                        }
+                    }
+
+                    Button { onNew() } label: {
+                        Label("New Board", systemImage: "plus.circle.fill")
+                            .foregroundStyle(Theme.accent)
+                    }
                 }
+                .scrollContentBackground(.hidden)
             }
             .navigationTitle("Your Boards")
             .navigationBarTitleDisplayMode(.inline)
@@ -349,6 +348,8 @@ struct BoardListSheet: View {
                         .foregroundStyle(Theme.accent)
                 }
             }
+            .toolbarBackground(Theme.bg.opacity(0.8), for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
         }
     }
 }
@@ -391,30 +392,10 @@ struct OnboardingView: View {
 
     var body: some View {
         ZStack {
-            // Same starfield + night sky as the main app
-            Color(hex: "0B0F1F").ignoresSafeArea()
-            RadialGradient(colors: [Color(hex: "2D2659").opacity(0.7), .clear],
-                           center: .topLeading, startRadius: 0, endRadius: 600)
-                .ignoresSafeArea()
-            RadialGradient(colors: [Color(hex: "0F2436").opacity(0.6), .clear],
-                           center: .bottomTrailing, startRadius: 0, endRadius: 500)
-                .ignoresSafeArea()
-            StarfieldView(starCount: 140, seed: 12)
-                .ignoresSafeArea()
-            // A flat black sky behind a coral star reads as neon on
-            // near-black. A low warm band toward the horizon keeps the sky
-            // dark while giving the first frame something other than
-            // black + glow.
-            LinearGradient(
-                stops: [
-                    .init(color: .clear, location: 0.62),
-                    .init(color: Theme.accent.opacity(0.22), location: 0.86),
-                    .init(color: Theme.accent.opacity(0.50), location: 1.0),
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
+            // Same night sky as the main app — the ember horizon is already
+            // built into the ground gradient, so a coral star reads against
+            // real sky, not a flat black + glow.
+            SkyBackground(seed: 12)
 
             VStack(spacing: 0) {
                 // Skip button — only after page 0
@@ -684,16 +665,8 @@ struct ExamplePickerView: View {
 
     var body: some View {
         ZStack {
-            // Same observatory backdrop as onboarding — continuity matters.
-            Color(hex: "0B0F1F").ignoresSafeArea()
-            RadialGradient(colors: [Color(hex: "2D2659").opacity(0.6), .clear],
-                           center: .topLeading, startRadius: 0, endRadius: 600)
-                .ignoresSafeArea()
-            RadialGradient(colors: [Color(hex: "0F2436").opacity(0.5), .clear],
-                           center: .bottomTrailing, startRadius: 0, endRadius: 500)
-                .ignoresSafeArea()
-            StarfieldView(starCount: 110, seed: 23)
-                .ignoresSafeArea()
+            // Same sky as onboarding — continuity matters.
+            SkyBackground(seed: 23)
 
             ScrollView {
                 VStack(spacing: 28) {
@@ -1044,12 +1017,7 @@ struct AISeedView: View {
 
     var body: some View {
         ZStack {
-            Color(hex: "0B0F1F").ignoresSafeArea()
-            RadialGradient(colors: [Color(hex: "2D2659").opacity(0.55), .clear],
-                           center: .topLeading, startRadius: 0, endRadius: 600)
-                .ignoresSafeArea()
-            StarfieldView(starCount: 110, seed: 91)
-                .ignoresSafeArea()
+            SkyBackground(seed: 91)
 
             VStack(alignment: .leading, spacing: 18) {
                 HStack {
@@ -1383,9 +1351,9 @@ struct CalibrationView: View {
 
     var body: some View {
         ZStack {
-            Color(hex: "0B0F1F").ignoresSafeArea()
-            StarfieldView(starCount: 60, seed: 73)
-                .ignoresSafeArea()
+            // Calibration reads back onto the same sky, ridge included —
+            // this is the place the app keeps its promises, not a modal.
+            SkyBackground(seed: 73, treeline: true)
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
