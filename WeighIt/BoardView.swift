@@ -3,6 +3,14 @@ import SwiftData
 
 struct BoardView: View {
     @Bindable var board: Board
+    /// Set when the check-in reminder could not be scheduled because notifications are off,
+    /// so a lit date chip cannot stand for a reminder that will never fire.
+    /// -reckonCheckInDenied 1 reaches the state, since the refusal cannot be driven headlessly.
+    #if DEBUG
+    @State private var checkInDenied = UserDefaults.standard.bool(forKey: "reckonCheckInDenied")
+    #else
+    @State private var checkInDenied = false
+    #endif
     @State private var showResults = false
     @State private var selectedCell: CellKey?
     @State private var ratingPopoverCell: CellKey?
@@ -369,7 +377,15 @@ struct BoardView: View {
             // verdict has been written. Reckon will surface a calibration curve
             // across all completed boards over time, turning a one-shot tool into
             // a thinking gym that gets better with each decision.
-            if !board.conclusion.isEmpty {
+            #if DEBUG
+            // -reckonRevealCalibration 1 shows this block, which otherwise appears only once a
+            // verdict is written, so a capture can reach the check-in row and the line beneath
+            // it. Four attempts to photograph that row failed on 2026-09-05 and it is owed.
+            let revealForCapture = UserDefaults.standard.bool(forKey: "reckonRevealCalibration")
+            #else
+            let revealForCapture = false
+            #endif
+            if !board.conclusion.isEmpty || revealForCapture {
                 calibrationCard
                     .transition(.opacity.combined(with: .move(edge: .bottom)))
                 preMortemCard
@@ -474,13 +490,16 @@ struct BoardView: View {
                                 board.checkInDate = choice.date
                             }
                             // Schedule the actual reminder. Permission is requested
-                            // inside the manager — first time only.
+                            // inside the manager, the first time only, and the answer comes
+                            // back so a refusal cannot leave a lit chip promising a reminder
+                            // that was never created.
                             Task {
-                                await NotificationManager.scheduleCheckIn(
+                                let scheduled = await NotificationManager.scheduleCheckIn(
                                     boardID: board.id,
                                     question: board.question,
                                     fireAt: choice.date
                                 )
+                                await MainActor.run { checkInDenied = !scheduled }
                             }
                         } label: {
                             Text(choice.label)
@@ -497,6 +516,13 @@ struct BoardView: View {
                         }
                         .buttonStyle(.plain)
                     }
+                }
+                if checkInDenied {
+                    Text("Notifications are off for Reckon, so this check-in cannot arrive. Settings, then Reckon, will turn them on.")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(Theme.negativeInk)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 2)
                 }
             }
         }

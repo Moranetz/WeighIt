@@ -1703,9 +1703,14 @@ enum NotificationManager {
         }
     }
 
-    static func scheduleCheckIn(boardID: UUID, question: String, fireAt date: Date) async {
+    /// Returns false when the reminder could not be scheduled because notifications are off.
+    /// Fleet round 113 (2026-09-05): this returned quietly, so tapping a check-in date lit the
+    /// chip and set the board's date while the reminder was never created. On a decision log,
+    /// the check-in is the product, and a user was shown one that could not arrive.
+    @discardableResult
+    static func scheduleCheckIn(boardID: UUID, question: String, fireAt date: Date) async -> Bool {
         let granted = await requestPermissionIfNeeded()
-        guard granted else { return }
+        guard granted else { return false }
 
         cancelCheckIn(boardID: boardID)
 
@@ -1724,7 +1729,12 @@ enum NotificationManager {
             content: content,
             trigger: trigger
         )
-        try? await UNUserNotificationCenter.current().add(request)
+        do {
+            try await UNUserNotificationCenter.current().add(request)
+            return true
+        } catch {
+            return false
+        }
     }
 
     static func cancelCheckIn(boardID: UUID) {

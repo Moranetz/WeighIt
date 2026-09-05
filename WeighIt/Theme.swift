@@ -55,6 +55,11 @@ enum Theme {
     // Semantic.
     static let positive = Color(hex: "34D399")
     static let negative = Color(hex: "F87171")
+    /// Negative's INK value, for type on the elevated card. Fleet round 113 (2026-09-05):
+    /// `negative` itself measures Lc 45.9 there, weaker than plain secondary text at 65.2, so
+    /// using it as type would trade legibility for signal. Same hue and saturation, lightness
+    /// 71 to 88, which measures Lc 76.3 and beats both.
+    static let negativeInk = Color(hex: "FCC5C5")
     static let warning = Color(hex: "FBBF24")
 
     // MARK: - The Night Sky
