@@ -27,9 +27,25 @@ struct BoardView: View {
         board.question == "Should I work out today or rest?"
     }
 
+    /// -reckonRevealCalibration 1 lifts the calibration block to the top of the board for a
+    /// capture. It normally appears only once a verdict is written and then sits far below the
+    /// fold, and four attempts to scroll a capture down to it failed on 2026-09-05. Putting it
+    /// where a screenshot can see it proves the row and its copy render; it says nothing about
+    /// where the row sits on a real board, and the ledger states that rather than implying it.
+    private var revealCalibrationForCapture: Bool {
+        #if DEBUG
+        return UserDefaults.standard.bool(forKey: "reckonRevealCalibration")
+        #else
+        return false
+        #endif
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 22) {
+                if revealCalibrationForCapture {
+                    calibrationCard
+                }
                 if isTutorialBoard && !hasCompletedTutorial {
                     tutorialCoachmark
                 }
@@ -377,15 +393,7 @@ struct BoardView: View {
             // verdict has been written. Reckon will surface a calibration curve
             // across all completed boards over time, turning a one-shot tool into
             // a thinking gym that gets better with each decision.
-            #if DEBUG
-            // -reckonRevealCalibration 1 shows this block, which otherwise appears only once a
-            // verdict is written, so a capture can reach the check-in row and the line beneath
-            // it. Four attempts to photograph that row failed on 2026-09-05 and it is owed.
-            let revealForCapture = UserDefaults.standard.bool(forKey: "reckonRevealCalibration")
-            #else
-            let revealForCapture = false
-            #endif
-            if !board.conclusion.isEmpty || revealForCapture {
+            if !board.conclusion.isEmpty {
                 calibrationCard
                     .transition(.opacity.combined(with: .move(edge: .bottom)))
                 preMortemCard
