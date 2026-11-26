@@ -560,7 +560,11 @@ final class Board {
     var filledCells: Int {
         cellRatings.filter { cell in
             cell.ratingValue != nil &&
-            !hypotheses.first(where: { $0.id == cell.hypothesisID })!.isRuledOut
+            // Count a rated cell only when its hypothesis still exists and is not
+            // ruled out. Using optional chaining (instead of a force-unwrap) keeps
+            // an orphaned cell rating — one whose hypothesis was deleted without its
+            // ratings being cleaned up — from crashing the whole board list.
+            (hypotheses.first(where: { $0.id == cell.hypothesisID })?.isRuledOut == false)
         }.count
     }
 
