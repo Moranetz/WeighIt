@@ -24,18 +24,9 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // Calm warm-dark ground with a single, restrained warm wash
-                // up top. No purple/indigo overlays (impeccable.style #13:
-                // "AI color palette") and no atmospheric layer-stack
-                // (the lava-lamp / vibecoded background tell).
-                Theme.bg.ignoresSafeArea()
-                RadialGradient(
-                    colors: [Theme.accent.opacity(0.10), .clear],
-                    center: .top,
-                    startRadius: 0,
-                    endRadius: 480
-                )
-                .ignoresSafeArea()
+                // The night sky as a place — ground, Milky Way, stars, and a
+                // treeline so the tutorial board and matrix sit on land.
+                SkyBackground(seed: 1, treeline: true)
 
                 if let board = activeBoard {
                     BoardView(board: board)
@@ -123,6 +114,19 @@ struct ContentView: View {
             if !hasSeenOnboarding {
                 showOnboarding = true
             } else if boards.isEmpty {
+                #if DEBUG
+                if DebugLaunchArgs.forceBlankBoard {
+                    let board = Board()
+                    context.insert(board)
+                    activeBoard = board
+                } else if !hasCompletedTutorial {
+                    let board = Board(archetype: .tutorial)
+                    context.insert(board)
+                    activeBoard = board
+                } else {
+                    showExamplePicker = true
+                }
+                #else
                 // First launch after onboarding: skip the picker entirely and drop the
                 // user straight into the Quick Tour. Less choice, less paralysis.
                 if !hasCompletedTutorial {
@@ -132,7 +136,12 @@ struct ContentView: View {
                 } else {
                     showExamplePicker = true
                 }
+                #endif
             }
+            #if DEBUG
+            if DebugLaunchArgs.showBoardList { showBoardList = true }
+            if DebugLaunchArgs.showCalibration { showCalibration = true }
+            #endif
         }
         .onChange(of: showOnboarding) { _, newValue in
             // When onboarding closes for the first time, the same first-launch logic:
@@ -282,46 +291,56 @@ struct BoardListSheet: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                ForEach(boards) { board in
-                    Button {
-                        activeBoard = board
-                        dismiss()
-                    } label: {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(board.displayName)
-                                    .font(.subheadline)
-                                    .fontWeight(board.id == activeBoard?.id ? .bold : .medium)
-                                    .foregroundStyle(board.id == activeBoard?.id ? Theme.accent : Theme.textPrimary)
-                                Text(board.updatedAt.formatted(.relative(presentation: .named)))
-                                    .font(.caption)
-                                    .foregroundStyle(Theme.textDim)
-                            }
-                            Spacer()
-                            if board.id == activeBoard?.id {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundStyle(Theme.accent)
-                            }
-                            Text("\(board.completionPercent)%")
-                                .font(.caption)
-                                .fontWeight(.bold)
-                                .foregroundStyle(board.completionPercent == 100 ? Theme.positive : Theme.textDim)
-                        }
-                    }
-                    .swipeActions(edge: .trailing) {
-                        if boards.count > 1 {
-                            Button(role: .destructive) { onDelete(board) } label: {
-                                Label("Delete", systemImage: "trash")
-                            }
-                        }
-                    }
-                }
+            ZStack {
+                // The board list is its own place in the same sky, not a
+                // system sheet — the previous default background showed as
+                // 99% near-neutral chrome under bar_audit.
+                SkyBackground(seed: 55)
 
-                Button { onNew() } label: {
-                    Label("New Board", systemImage: "plus.circle.fill")
-                        .foregroundStyle(Theme.accent)
+                List {
+                    ForEach(boards) { board in
+                        Button {
+                            activeBoard = board
+                            dismiss()
+                        } label: {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(board.displayName)
+                                        .font(.subheadline)
+                                        .fontWeight(board.id == activeBoard?.id ? .bold : .medium)
+                                        .foregroundStyle(board.id == activeBoard?.id ? Theme.accent : Theme.textPrimary)
+                                    Text(board.updatedAt.formatted(.relative(presentation: .named)))
+                                        .font(.caption)
+                                        .foregroundStyle(Theme.textDim)
+                                }
+                                Spacer()
+                                if board.id == activeBoard?.id {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundStyle(Theme.accent)
+                                }
+                                Text("\(board.completionPercent)%")
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                                    .foregroundStyle(board.completionPercent == 100 ? Theme.positive : Theme.textDim)
+                            }
+                        }
+                        .listRowBackground(Theme.surface)
+                        .swipeActions(edge: .trailing) {
+                            if boards.count > 1 {
+                                Button(role: .destructive) { onDelete(board) } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
+                        }
+                    }
+
+                    Button { onNew() } label: {
+                        Label("New Board", systemImage: "plus.circle.fill")
+                            .foregroundStyle(Theme.accent)
+                    }
+                    .listRowBackground(Theme.surface)
                 }
+                .scrollContentBackground(.hidden)
             }
             .navigationTitle("Your Boards")
             .navigationBarTitleDisplayMode(.inline)
@@ -331,6 +350,8 @@ struct BoardListSheet: View {
                         .foregroundStyle(Theme.accent)
                 }
             }
+            .toolbarBackground(Theme.bg.opacity(0.8), for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
         }
     }
 }
@@ -366,22 +387,17 @@ struct ProgressRingView: View {
 
 struct OnboardingView: View {
     @Binding var isPresented: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var page = 0
     @State private var pageStarPulse = false
     private let totalPages = 3
 
     var body: some View {
         ZStack {
-            // Same starfield + night sky as the main app
-            Color(hex: "0B0F1F").ignoresSafeArea()
-            RadialGradient(colors: [Color(hex: "2D2659").opacity(0.7), .clear],
-                           center: .topLeading, startRadius: 0, endRadius: 600)
-                .ignoresSafeArea()
-            RadialGradient(colors: [Color(hex: "0F2436").opacity(0.6), .clear],
-                           center: .bottomTrailing, startRadius: 0, endRadius: 500)
-                .ignoresSafeArea()
-            StarfieldView(starCount: 140, seed: 12)
-                .ignoresSafeArea()
+            // Same night sky as the main app — the ember horizon is already
+            // built into the ground gradient, so a coral star reads against
+            // real sky, not a flat black + glow.
+            SkyBackground(seed: 12)
 
             VStack(spacing: 0) {
                 // Skip button — only after page 0
@@ -454,20 +470,13 @@ struct OnboardingView: View {
     /// Page 1: The premise. Why most decision tools don't help, and what's different here.
     private var pageOne: some View {
         VStack(spacing: 32) {
-            // Hero: a single bright star
-            ZStack {
-                Circle()
-                    .fill(Theme.accent.opacity(0.2))
-                    .frame(width: 140, height: 140)
-                    .blur(radius: 30)
-                Image(systemName: "star.fill")
-                    .font(.system(size: 64))
-                    .foregroundStyle(Theme.accent)
-                    .shadow(color: Theme.accent.opacity(0.7), radius: pageStarPulse ? 20 : 10)
-                    .scaleEffect(pageStarPulse ? 1.06 : 1)
-                    .animation(.easeInOut(duration: 2.4).repeatForever(autoreverses: true), value: pageStarPulse)
-            }
-            .onAppear { pageStarPulse = true }
+            // Hero: a single bright star — drawn, not glowed.
+            DrawnStar(color: Theme.accent, size: 64, haloSize: 108, pulse: pageStarPulse)
+                .animation(
+                    reduceMotion ? nil : .easeInOut(duration: 2.4).repeatForever(autoreverses: true),
+                    value: pageStarPulse
+                )
+                .onAppear { pageStarPulse = true }
 
             VStack(spacing: 16) {
                 Text("Reckon")
@@ -481,7 +490,7 @@ struct OnboardingView: View {
                     .foregroundStyle(Theme.textSecondary)
                     .multilineTextAlignment(.center)
 
-                Text("Most decision tools let you write a long pros-and-cons list and call it analysis. You can rationalize anything in prose.\n\nReckon makes you compare every piece of evidence against every hypothesis — and ranks them by what hasn't been knocked down, not by what has the most support.")
+                Text("Most decision tools ask for a pros-and-cons list. You can write one that supports anything you already believe.\n\nReckon compares every piece of evidence against every hypothesis, then ranks each by how much scrutiny it survived.")
                     .font(.body)
                     .foregroundStyle(Theme.textDim)
                     .multilineTextAlignment(.center)
@@ -513,7 +522,7 @@ struct OnboardingView: View {
                 VStack(alignment: .leading, spacing: 14) {
                     metaphorRow(icon: "star", title: "Hypotheses are stars", body: "Each candidate explanation. Brightness = stability under observation.")
                     metaphorRow(icon: "binoculars", title: "Evidence is observations", body: "Each piece you log. Credibility × relevance is the viewing condition.")
-                    metaphorRow(icon: "scope", title: "Cells are sightlines", body: "Each cell rates one observation against one star. Empty cells pulse — you haven't pointed the telescope there yet.")
+                    metaphorRow(icon: "scope", title: "Cells are sightlines", body: "Each cell rates one observation against one star. An unrated cell pulses until you point the telescope there.")
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 8)
@@ -525,16 +534,9 @@ struct OnboardingView: View {
     /// Page 3: The cognitive twist. Refutation-first + Pareidolia Alert.
     private var pageThree: some View {
         VStack(spacing: 24) {
-            // Hero: a star with a refutation badge
+            // Hero: a star with a refutation badge — drawn, not glowed.
             ZStack {
-                Circle()
-                    .fill(Color(hex: "5CC4B8").opacity(0.15))
-                    .frame(width: 130, height: 130)
-                    .blur(radius: 25)
-                Image(systemName: "star.fill")
-                    .font(.system(size: 56))
-                    .foregroundStyle(Color(hex: "5CC4B8"))
-                    .shadow(color: Color(hex: "5CC4B8").opacity(0.6), radius: 12)
+                DrawnStar(color: Color(hex: "5CC4B8"), size: 56, haloSize: 96)
                 // Refutation badge
                 Text("0")
                     .font(.system(size: 14, weight: .heavy))
@@ -547,12 +549,12 @@ struct OnboardingView: View {
             .frame(height: 130)
 
             VStack(spacing: 10) {
-                Text("Steadiness, not popularity")
+                Text("Steadiness beats popularity")
                     .font(.title2)
                     .fontWeight(.heavy)
                     .foregroundStyle(Theme.textPrimary)
 
-                Text("Heuer's ACH technique ranks hypotheses by FEWEST refutations — not most support. The right answer is the star nothing has dimmed.")
+                Text("Heuer's ACH technique ranks hypotheses by FEWEST refutations. The right answer is the star nothing has dimmed.")
                     .font(.body)
                     .foregroundStyle(Theme.textDim)
                     .multilineTextAlignment(.center)
@@ -585,7 +587,7 @@ struct OnboardingView: View {
             .padding(.horizontal, 24)
 
             // Closing tagline
-            Text("The brightest star isn't always the right one.\nThe steadiest one is.")
+            Text("Watch which star stays lit.")
                 .font(.subheadline)
                 .italic()
                 .foregroundStyle(Theme.textSecondary)
@@ -665,16 +667,8 @@ struct ExamplePickerView: View {
 
     var body: some View {
         ZStack {
-            // Same observatory backdrop as onboarding — continuity matters.
-            Color(hex: "0B0F1F").ignoresSafeArea()
-            RadialGradient(colors: [Color(hex: "2D2659").opacity(0.6), .clear],
-                           center: .topLeading, startRadius: 0, endRadius: 600)
-                .ignoresSafeArea()
-            RadialGradient(colors: [Color(hex: "0F2436").opacity(0.5), .clear],
-                           center: .bottomTrailing, startRadius: 0, endRadius: 500)
-                .ignoresSafeArea()
-            StarfieldView(starCount: 110, seed: 23)
-                .ignoresSafeArea()
+            // Same sky as onboarding — continuity matters.
+            SkyBackground(seed: 23)
 
             ScrollView {
                 VStack(spacing: 28) {
@@ -684,7 +678,7 @@ struct ExamplePickerView: View {
                             .fontWeight(.heavy)
                             .foregroundStyle(Theme.textPrimary)
 
-                        Text("ACH works the same in every domain — but the framing matters.\nPick the lens closest to yours. You can always switch later.")
+                        Text("ACH works the same in every domain, but the framing changes.\nPick the lens closest to yours. You can always switch later.")
                             .font(.subheadline)
                             .foregroundStyle(Theme.textDim)
                             .multilineTextAlignment(.center)
@@ -857,7 +851,7 @@ private struct ArchetypeCard: View {
             .background {
                 ZStack {
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(.ultraThinMaterial.opacity(0.55))
+                        .fill(Theme.surfaceRaised)
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
                         .fill(LinearGradient(
                             colors: [
@@ -934,7 +928,7 @@ private struct AISeedCard: View {
             .background {
                 ZStack {
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(.ultraThinMaterial.opacity(0.6))
+                        .fill(Theme.surfaceRaised)
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
                         .fill(LinearGradient(
                             colors: [Theme.accent.opacity(0.18), Color.clear],
@@ -989,7 +983,7 @@ private struct TemplateCard: View {
             .background {
                 ZStack {
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(.ultraThinMaterial.opacity(0.55))
+                        .fill(Theme.surfaceRaised)
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
                         .strokeBorder(Theme.accent.opacity(0.25), lineWidth: 1)
                 }
@@ -1025,12 +1019,7 @@ struct AISeedView: View {
 
     var body: some View {
         ZStack {
-            Color(hex: "0B0F1F").ignoresSafeArea()
-            RadialGradient(colors: [Color(hex: "2D2659").opacity(0.55), .clear],
-                           center: .topLeading, startRadius: 0, endRadius: 600)
-                .ignoresSafeArea()
-            StarfieldView(starCount: 110, seed: 91)
-                .ignoresSafeArea()
+            SkyBackground(seed: 91)
 
             VStack(alignment: .leading, spacing: 18) {
                 HStack {
@@ -1047,7 +1036,7 @@ struct AISeedView: View {
                 }
                 .padding(.top, 12)
 
-                Text("A paragraph or two. Mention the question, what you've already considered, and any evidence on hand. The model proposes a starting matrix — you'll edit before saving.")
+                Text("A paragraph or two. Mention the question, what you've already considered, and any evidence on hand. The model proposes a starting matrix. You'll edit before saving.")
                     .font(.subheadline)
                     .foregroundStyle(Theme.textDim)
                     .lineSpacing(2)
@@ -1364,9 +1353,9 @@ struct CalibrationView: View {
 
     var body: some View {
         ZStack {
-            Color(hex: "0B0F1F").ignoresSafeArea()
-            StarfieldView(starCount: 60, seed: 73)
-                .ignoresSafeArea()
+            // Calibration reads back onto the same sky, ridge included —
+            // this is the place the app keeps its promises, not a modal.
+            SkyBackground(seed: 73, treeline: true)
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
@@ -1409,24 +1398,30 @@ struct CalibrationView: View {
                 .foregroundStyle(Theme.textDim)
                 .lineSpacing(2)
 
-            // Streak + total + badge — three small status chips
-            HStack(spacing: 8) {
-                statusChip(
-                    icon: "flame.fill",
-                    label: "\(reviewStreakWeeks)-week streak",
-                    color: reviewStreakWeeks >= 1 ? Color(hex: "EF8B6E") : Theme.textDim
-                )
-                statusChip(
-                    icon: "checklist",
-                    label: "\(reviewed.count) reviewed",
-                    color: Theme.textSecondary
-                )
-                if let badge = brierBadge {
+            // Streak + total + badge — three small status chips. All three are
+            // derived from `reviewed`, so before a single board has been reviewed
+            // they'd only ever read "0-week streak" and "0 reviewed": a rank
+            // before a rating. The empty state below already says what fills
+            // them in, so the chips wait for the first real number.
+            if !reviewed.isEmpty {
+                HStack(spacing: 8) {
                     statusChip(
-                        icon: badge.icon,
-                        label: badge.label,
-                        color: badge.color
+                        icon: "flame.fill",
+                        label: "\(reviewStreakWeeks)-week streak",
+                        color: reviewStreakWeeks >= 1 ? Color(hex: "EF8B6E") : Theme.textDim
                     )
+                    statusChip(
+                        icon: "checklist",
+                        label: "\(reviewed.count) reviewed",
+                        color: Theme.textSecondary
+                    )
+                    if let badge = brierBadge {
+                        statusChip(
+                            icon: badge.icon,
+                            label: badge.label,
+                            color: badge.color
+                        )
+                    }
                 }
             }
         }
@@ -1532,7 +1527,7 @@ struct CalibrationView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(.ultraThinMaterial.opacity(0.55))
+                .fill(Theme.surfaceRaised)
                 .overlay(
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
                         .strokeBorder(Theme.accent.opacity(0.22), lineWidth: 1)
@@ -1554,7 +1549,7 @@ struct CalibrationView: View {
                             .font(.caption)
                             .foregroundStyle(Theme.textSecondary)
                         Spacer()
-                        Text("→ actually \(Int(bucket.actual))%")
+                        Text("actually \(Int(bucket.actual))%")
                             .font(.system(.caption, design: .rounded))
                             .fontWeight(.bold)
                             .foregroundStyle(
@@ -1593,7 +1588,7 @@ struct CalibrationView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(.ultraThinMaterial.opacity(0.55))
+                .fill(Theme.surfaceRaised)
                 .overlay(
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
                         .strokeBorder(Theme.hairline, lineWidth: 1)
@@ -1646,7 +1641,7 @@ struct CalibrationView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(.ultraThinMaterial.opacity(0.55))
+                .fill(Theme.surfaceRaised)
                 .overlay(
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
                         .strokeBorder(Theme.warning.opacity(0.22), lineWidth: 1)
@@ -1708,9 +1703,14 @@ enum NotificationManager {
         }
     }
 
-    static func scheduleCheckIn(boardID: UUID, question: String, fireAt date: Date) async {
+    /// Returns false when the reminder could not be scheduled because notifications are off.
+    /// Fleet round 113 (2026-09-05): this returned quietly, so tapping a check-in date lit the
+    /// chip and set the board's date while the reminder was never created. On a decision log,
+    /// the check-in is the product, and a user was shown one that could not arrive.
+    @discardableResult
+    static func scheduleCheckIn(boardID: UUID, question: String, fireAt date: Date) async -> Bool {
         let granted = await requestPermissionIfNeeded()
-        guard granted else { return }
+        guard granted else { return false }
 
         cancelCheckIn(boardID: boardID)
 
@@ -1729,7 +1729,12 @@ enum NotificationManager {
             content: content,
             trigger: trigger
         )
-        try? await UNUserNotificationCenter.current().add(request)
+        do {
+            try await UNUserNotificationCenter.current().add(request)
+            return true
+        } catch {
+            return false
+        }
     }
 
     static func cancelCheckIn(boardID: UUID) {

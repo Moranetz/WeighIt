@@ -3,15 +3,19 @@ import SwiftData
 
 struct BoardView: View {
     @Bindable var board: Board
+    /// Set when the check-in reminder could not be scheduled because notifications are off,
+    /// so a lit date chip cannot stand for a reminder that will never fire.
+    /// -reckonCheckInDenied 1 reaches the state, since the refusal cannot be driven headlessly.
+    #if DEBUG
+    @State private var checkInDenied = UserDefaults.standard.bool(forKey: "reckonCheckInDenied")
+    #else
+    @State private var checkInDenied = false
+    #endif
     @State private var showResults = false
     @State private var selectedCell: CellKey?
     @State private var ratingPopoverCell: CellKey?
-    @State private var showConfetti = false
-    @State private var previousFilledCount = 0
 
     private let haptic = UIImpactFeedbackGenerator(style: .light)
-    private let successHaptic = UINotificationFeedbackGenerator()
-    private let confettiDisplayDuration: Duration = .seconds(2.5)
 
     @AppStorage("hasCompletedTutorial") private var hasCompletedTutorial = false
 
@@ -23,9 +27,25 @@ struct BoardView: View {
         board.question == "Should I work out today or rest?"
     }
 
+    /// -reckonRevealCalibration 1 lifts the calibration block to the top of the board for a
+    /// capture. It normally appears only once a verdict is written and then sits far below the
+    /// fold, and four attempts to scroll a capture down to it failed on 2026-09-05. Putting it
+    /// where a screenshot can see it proves the row and its copy render; it says nothing about
+    /// where the row sits on a real board, and the ledger states that rather than implying it.
+    private var revealCalibrationForCapture: Bool {
+        #if DEBUG
+        return UserDefaults.standard.bool(forKey: "reckonRevealCalibration")
+        #else
+        return false
+        #endif
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 22) {
+                if revealCalibrationForCapture {
+                    calibrationCard
+                }
                 if isTutorialBoard && !hasCompletedTutorial {
                     tutorialCoachmark
                 }
@@ -61,28 +81,6 @@ struct BoardView: View {
             .padding(.bottom, 40)
         }
         .scrollDismissesKeyboard(.interactively)
-        .overlay {
-            if showConfetti {
-                ConstellationRevealView(board: board)
-                    .ignoresSafeArea()
-                    .allowsHitTesting(false)
-            }
-        }
-        .onChange(of: board.filledCells) { oldVal, newVal in
-            if board.completionPercent == 100 && previousFilledCount < board.totalCells && board.totalCells > 0 {
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
-                    showConfetti = true
-                }
-                successHaptic.notificationOccurred(.success)
-                Task {
-                    try? await Task.sleep(for: confettiDisplayDuration)
-                    await MainActor.run {
-                        showConfetti = false
-                    }
-                }
-            }
-            previousFilledCount = newVal
-        }
     }
 
     // MARK: - Question
@@ -221,6 +219,8 @@ struct BoardView: View {
                 Button {
                     haptic.impactOccurred()
                     let ev = Evidence(sortOrder: board.evidences.count)
+                    Telemetry.activation("first_evidence")
+                    Telemetry.coreAction("add_evidence")
                     withAnimation(.spring(response: 0.5, dampingFraction: 0.75)) {
                         board.evidences.append(ev)
                     }
@@ -263,7 +263,7 @@ struct BoardView: View {
                                  icon: plainEnglishMode ? "tablecells" : "scope")
                     Text(plainEnglishMode
                          ? "Tap any cell to rate that evidence against that hypothesis. Empty cells pulse."
-                         : "Each cell is one sightline. Empty cells pulse — unobserved.")
+                         : "Each cell is one sightline. An empty cell pulses until you rate it.")
                         .font(.caption)
                         .foregroundStyle(Theme.textDim)
                         .fixedSize(horizontal: false, vertical: true)
@@ -423,7 +423,7 @@ struct BoardView: View {
             Text("Imagine you're wrong about this in a year. What happened?")
                 .font(.caption)
                 .foregroundStyle(Theme.textSecondary)
-            TextField("Concretely — what got you here?", text: $board.preMortem, axis: .vertical)
+            TextField("Concretely, what got you here?", text: $board.preMortem, axis: .vertical)
                 .font(.system(.body, design: .rounded))
                 .lineLimit(2...5)
                 .foregroundStyle(Theme.textPrimary)
@@ -498,13 +498,16 @@ struct BoardView: View {
                                 board.checkInDate = choice.date
                             }
                             // Schedule the actual reminder. Permission is requested
-                            // inside the manager — first time only.
+                            // inside the manager, the first time only, and the answer comes
+                            // back so a refusal cannot leave a lit chip promising a reminder
+                            // that was never created.
                             Task {
-                                await NotificationManager.scheduleCheckIn(
+                                let scheduled = await NotificationManager.scheduleCheckIn(
                                     boardID: board.id,
                                     question: board.question,
                                     fireAt: choice.date
                                 )
+                                await MainActor.run { checkInDenied = !scheduled }
                             }
                         } label: {
                             Text(choice.label)
@@ -521,6 +524,13 @@ struct BoardView: View {
                         }
                         .buttonStyle(.plain)
                     }
+                }
+                if checkInDenied {
+                    Text("Notifications are off for Reckon, so this check-in cannot arrive. Settings, then Reckon, will turn them on.")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(Theme.negativeInk)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 2)
                 }
             }
         }
@@ -604,7 +614,7 @@ struct BoardView: View {
                 .buttonStyle(.plain)
             }
 
-            Text("Two hypotheses. Two pieces of evidence. Two cells already rated.\nTry rating the empty cells in the matrix below — long-press a cell to cycle ratings, or tap to pick one.")
+            Text("Two hypotheses. Two pieces of evidence. Two cells already rated.\nTry rating the empty cells in the matrix below. Long-press a cell to cycle ratings, or tap to pick one.")
                 .font(.subheadline)
                 .foregroundStyle(Theme.textPrimary)
                 .lineSpacing(2)
@@ -620,7 +630,7 @@ struct BoardView: View {
                     hasCompletedTutorial = true
                 }
             } label: {
-                Text("I've got it →")
+                Text("I've got it")
                     .font(.system(.subheadline, design: .rounded))
                     .fontWeight(.bold)
                     .foregroundStyle(Color(hex: "0A0A12"))
@@ -634,7 +644,7 @@ struct BoardView: View {
         .background {
             ZStack {
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(.ultraThinMaterial.opacity(0.7))
+                    .fill(Theme.surfaceRaised)
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .fill(LinearGradient(
                         colors: [Color(hex: "F5C49A").opacity(0.18), Color.clear],
@@ -655,7 +665,7 @@ struct BoardView: View {
                 .italic()
                 .foregroundStyle(Theme.textDim)
                 .multilineTextAlignment(.center)
-            Text("Based on Analysis of Competing Hypotheses — the technique CIA analysts use to keep wishful thinking out of conclusions.")
+            Text("Based on Analysis of Competing Hypotheses, the technique CIA analysts use to keep wishful thinking out of conclusions.")
                 .font(.caption2)
                 .foregroundStyle(Theme.textMuted)
                 .multilineTextAlignment(.center)

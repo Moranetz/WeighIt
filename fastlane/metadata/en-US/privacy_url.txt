@@ -1,1 +1,1 @@
-https://moranetz-pages.vercel.app/privacy.html
+https://moranetz.github.io/apps/reckon/privacy.html

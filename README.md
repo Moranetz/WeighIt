@@ -65,7 +65,7 @@ First launch presents a 3-page tutorial in the same observatory aesthetic:
 
 ## Running Locally
 
-1. Open [WeighIt.xcodeproj](/Users/infiniteupside/WeighIt/WeighIt.xcodeproj) in Xcode 15 or later.
+1. Open [WeighIt.xcodeproj](./WeighIt.xcodeproj) in Xcode 15 or later.
 2. Select an iPhone simulator running iOS 17.0 or later.
 3. Build and run.
 
@@ -73,7 +73,7 @@ The project already contains the app target and SwiftData configuration. No manu
 
 ## Running The Android App
 
-1. Open [android-app](/Users/infiniteupside/WeighIt/android-app) in Android Studio Jellyfish or later.
+1. Open [android-app](./android-app) in Android Studio Jellyfish or later.
 2. Let Gradle sync the wrapper project.
 3. Run the `app` configuration on an Android 8.0+ emulator or device.
 
@@ -81,10 +81,10 @@ The Android app mirrors the native decision workflow: multiple boards, Room pers
 
 ## Proof Signals
 
-- native Xcode project checked in at [WeighIt.xcodeproj](/Users/infiniteupside/WeighIt/WeighIt.xcodeproj)
-- native Android Studio / Gradle project checked in at [android-app](/Users/infiniteupside/WeighIt/android-app)
-- GitHub Actions build workflow at [.github/workflows/ios-ci.yml](/Users/infiniteupside/WeighIt/.github/workflows/ios-ci.yml)
-- GitHub Actions Android workflow at [.github/workflows/android-ci.yml](/Users/infiniteupside/WeighIt/.github/workflows/android-ci.yml)
+- native Xcode project checked in at [WeighIt.xcodeproj](./WeighIt.xcodeproj)
+- native Android Studio / Gradle project checked in at [android-app](./android-app)
+- GitHub Actions build workflow at [.github/workflows/ios-ci.yml](./.github/workflows/ios-ci.yml)
+- GitHub Actions Android workflow at [.github/workflows/android-ci.yml](./.github/workflows/android-ci.yml)
 - source, prototype, and docs layers are all visible in one repo
 
 ## File Structure
@@ -123,11 +123,11 @@ The Android app mirrors the native decision workflow: multiple boards, Room pers
 
 ## What To Look At First
 
-- [ContentView.swift](/Users/infiniteupside/WeighIt/WeighIt/ContentView.swift)
-- [BoardView.swift](/Users/infiniteupside/WeighIt/WeighIt/BoardView.swift)
-- [MatrixView.swift](/Users/infiniteupside/WeighIt/WeighIt/MatrixView.swift)
-- [ResultsView.swift](/Users/infiniteupside/WeighIt/WeighIt/ResultsView.swift)
-- [Models.swift](/Users/infiniteupside/WeighIt/WeighIt/Models.swift)
+- [ContentView.swift](./WeighIt/ContentView.swift)
+- [BoardView.swift](./WeighIt/BoardView.swift)
+- [MatrixView.swift](./WeighIt/MatrixView.swift)
+- [ResultsView.swift](./WeighIt/ResultsView.swift)
+- [Models.swift](./WeighIt/Models.swift)
 
 ## Requirements
 

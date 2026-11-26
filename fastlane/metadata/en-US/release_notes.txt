@@ -1,1 +1,1 @@
-Initial release.
+Finishing a decision no longer sets off confetti. The board stays as it was, with the evidence where you can read it.

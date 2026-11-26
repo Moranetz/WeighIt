@@ -12,24 +12,53 @@ platform :ios do
   end
 
   lane :release do
-    produce(
-      app_identifier: "com.moranetz.WeighIt",
-      app_name: "Reckon: Decision Log",
-      team_id: "Q242KWQD56"
+    # The record exists (live 1.0), so `produce` is gone: it demanded an Apple ID username and
+    # died before the build (2026-09-02). The profile comes from sigh through the API key.
+    sigh(
+      app_identifier: "com.melmarion.WeighIt",
+      team_id: "Q242KWQD56",
+      force: true,
+      api_key: lane_context[SharedValues::APP_STORE_CONNECT_API_KEY]
     )
+    profile = lane_context[SharedValues::SIGH_NAME]
     build_app(
       project: "WeighIt.xcodeproj",
       scheme: "WeighIt",
       clean: true,
       export_method: "app-store",
-      export_options: "./ExportOptions.plist",
-      xcargs: "CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=Q242KWQD56 CODE_SIGN_IDENTITY='Apple Distribution: MARION MORANETZ (Q242KWQD56)' PROVISIONING_PROFILE_SPECIFIER='com.moranetz.WeighIt AppStore 1777929162'"
+      export_options: {
+        method: "app-store",
+        teamID: "Q242KWQD56",
+        signingStyle: "manual",
+        provisioningProfiles: { "com.melmarion.WeighIt" => profile },
+        signingCertificate: "Apple Distribution: MARION MORANETZ (Q242KWQD56)"
+      },
+      xcargs: "CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=Q242KWQD56 CODE_SIGN_IDENTITY='Apple Distribution: MARION MORANETZ (Q242KWQD56)' PROVISIONING_PROFILE_SPECIFIER='#{profile}'"
     )
     upload_to_app_store(
       skip_screenshots: true,
       skip_metadata: true,
       team_id: "Q242KWQD56",
-      force: true
+      force: true,
+      submit_for_review: false,
+      precheck_include_in_app_purchases: false
+    )
+  end
+
+  # Metadata only. The LIVE record is com.melmarion.WeighIt (1.0 READY_FOR_DISTRIBUTION); the
+  # 2026-05-16 identity wipe renamed this repo's bundle to com.moranetz.WeighIt, which would have
+  # created a second app and orphaned the live one. Restored 2026-09-02 (fleet round 8).
+  lane :listing do
+    upload_to_app_store(
+      app_identifier: "com.melmarion.WeighIt",
+      team_id: "Q242KWQD56",
+      skip_binary_upload: true,
+      skip_metadata: false,
+      skip_screenshots: true,
+      force: true,
+      run_precheck_before_submit: false,
+      submit_for_review: false,
+      precheck_include_in_app_purchases: false
     )
   end
 end

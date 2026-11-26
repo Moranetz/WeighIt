@@ -1,17 +1,11 @@
-Stop deciding from your gut. Start deciding from evidence.
+Reckon keeps a decision honest while you are still making it.
 
-Weigh It is a decision-analysis tool for structured thinking. Test hypotheses. Weigh evidence. See your cognitive biases before they see you.
+Write the decision as two or more hypotheses. Under each one, log what you have seen for it and against it, and how far you trust the source. The balance moves as the evidence comes in, so you can see which hypothesis is carrying the weight and which one you were hoping would.
 
-STRUCTURED HYPOTHESIS TESTING
-Frame your decision as competing hypotheses. For each one, log evidence for and against. Watch the balance shift as you add data instead of gut feelings.
+The method is Analysis of Competing Hypotheses, the structured technique intelligence analysts use when the stakes are high and the evidence is thin.
 
-EVIDENCE WEIGHTING
-Not all evidence is equal. Assign weights based on reliability, relevance, and source quality. The tool calculates what your evidence actually supports — not what you wish it supported.
+When the pattern of what you logged matches a known bias, Reckon says so. It flags confirmation bias when every entry supports the hypothesis you started with, anchoring when the first number never moved, and availability when the loudest evidence is simply the newest.
 
-COGNITIVE BIAS VISIBILITY
-The app flags when your evidence pattern matches known cognitive biases — confirmation bias, anchoring, availability heuristic. See your blind spots in real-time.
+Every decision stays on your phone. No account and no cloud.
 
-LOCAL & PRIVATE
-All your decisions stay on your device. No cloud. No accounts. Your thinking process is nobody's business.
-
-For anyone who makes important decisions and wants to make them better.
+Built for the decisions you will have to explain later: a hire, a lease, a treatment, a move.

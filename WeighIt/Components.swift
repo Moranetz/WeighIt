@@ -276,7 +276,7 @@ struct EvidenceRow: View {
         .background {
             ZStack {
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(Color.white.opacity(0.022))
+                    .fill(Theme.surface)
                 // Tiny twinkle in the corner — observation log entry asterism
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .strokeBorder(Theme.hairline.opacity(0.7), lineWidth: 1)
@@ -350,7 +350,7 @@ struct NotePanel: View {
                     Text(evidence.text.isEmpty ? "Evidence" : evidence.text)
                         .fontWeight(.semibold)
                         .foregroundStyle(Theme.textSecondary)
-                    Text("→")
+                    Image(systemName: "arrow.right")
                         .foregroundStyle(Theme.textDim)
                     Text(hypothesis.name.isEmpty ? "Explanation" : hypothesis.name)
                         .fontWeight(.semibold)
@@ -406,12 +406,7 @@ struct SteelmanSheet: View {
 
     var body: some View {
         ZStack {
-            Color(hex: "0B0F1F").ignoresSafeArea()
-            RadialGradient(colors: [Color(hex: "2D2659").opacity(0.55), .clear],
-                           center: .topLeading, startRadius: 0, endRadius: 500)
-                .ignoresSafeArea()
-            StarfieldView(starCount: 70, seed: 31)
-                .ignoresSafeArea()
+            SkyBackground(seed: 31)
 
             VStack(alignment: .leading, spacing: 18) {
                 HStack(spacing: 10) {
